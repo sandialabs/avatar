@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "version_info.h"
+char *get_version_string() {
+    char *version;
+    int size = strlen("1.1") + strlen("1408");
+    version = (char *)malloc((size+2) * sizeof(char));
+    sprintf(version, "%s.%s", "1.1", "1408");
+    return version;
+}

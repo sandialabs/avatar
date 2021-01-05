@@ -1,0 +1,153 @@
+\"
+\"
+\"
+\"
+\"
+\"
+\"
+.Dd 07 July 2007
+.Os
+.Dt PROXIMITY 1
+.Sh NAME
+.Nm proximity
+.Nd "compute outlier measure and proximity for an ensemble of trees"
+.Sh SYNOPSIS
+.Nm
+--format=NAME
+format-specific-arguments
+[options]
+.Sh DESCRIPTION
+.Nm
+operates on exodus\- or avatar\-format data and an ensemble file to compute
+compute outlier measures and proximity values.
+.Pp
+Generates an output file containing the outlier measure for each data sample.
+.Pp
+If the --sort option is specified, also computes the proximity from the
+sample number specified by the --sort option (or the first sample if not
+specified). For avatar-format data, the data is sorted by proximity to the
+specified sample.
+.Sh ARGUMENTS AND OPTIONS
+.Ss REQUIRED ARGUMENTS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl o Ar format-type
+.It Fl -format Ar format-type
+.Ar format-type
+is either
+.Ar exodus
+or
+.Ar avatar .
+See the
+.Sx FORMATS
+section for details. The default is
+.Ar exodus
+.El
+.Pp
+NOTE: See the
+.Sx FILENAMES
+section for file naming conventions.
+.Pp
+.Ss OPTIONAL ARGUMENTS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl -standard-deviation
+Use the standard deviation for standardizing the outlier measure. This is the default
+.It Fl -absolute-deviation
+Use the absolute deviation for standardizing the outlier measure.
+.It Fl -sort=INT
+Compute the proximity from the sample number specified by INT and sort the
+output file based on proximity.
+.It Fl -load-matrix
+The proximity matrix is computationally expensive and so is written to disk
+after it is computed. To use this stored matrix instead of computing it,
+specify this option.
+.It Fl -no-save-matrix
+Do not write the proximity matrix to disk.
+.It Fl -print-proximity-progress
+Prints the percent complete as the proximity matrix is computed.
+.El
+.Pp
+.so man1/exodus_args
+.El
+.Pp
+.so man1/avatar_args
+.Pp
+.so man1/avatar_opts
+.Pp
+.Ss ALTERNATE FILENAMES
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl -test-file= Ar file
+For
+.Ar avatar
+data, override the default filename for testing data.
+.It Fl -namesfile= Ar file
+For
+.Ar avatar
+data, override the default filename for metadata (the
+.Ar names
+file.
+.It Fl -trees-file= Ar file
+Override the default filename for the ensemble of trees.
+.It Fl -prox-sorted-file= Ar file
+Override the default filename for the output.
+.It Fl -prox-matrix-file= Ar file
+Override the the default filename for the proximity matrix stored to disk.
+.El
+.Pp
+.so man1/formats
+.Pp
+.Sh FILENAMES
+.Pp
+For
+.Ar exodus
+format data, if the value of the
+.Fl -datafile
+argument is
+.Ar foo.ex2
+then the testing data is taken from
+.Ar foo.ex2
+and the ensemble is read from
+.Ar foo.trees .
+.Pp
+For
+.Ar avatar
+format data, if the value of the
+.Fl -filestem
+argument is
+.Ar bar
+then
+.Ar bar.names
+is used for the class and attribute definition file,
+.Ar bar.test
+is used for the testing data.
+The ensemble is read from
+.Ar bar.trees .
+.Pp
+.Sh EXAMPLES
+.Pp
+.Dl proximity -o avatar -f autos --truth-column=3 --exclude=1-2
+.Pp
+Writes
+.Ar autos.proximity
+which is a duplicate of the input datafile with an additional column
+containing the outlier measure for each sample.
+.Pp
+.Dl proximity -o avatar -f autos --truth-column=3 --exclude=1-2 --sort=50
+.Pp
+Writes
+.Ar autos.proximity
+which is a dupplicate of the input datafile with two additional columns
+containing the outlier measure and the proximity to sample number 50. The
+data is sorted on the proximity value.
+.Sh FILES
+.Pp
+.Pp
+.Sh SEE ALSO
+.Pp
+.Xr avatardt 1,
+.Xr crossvalfc 1
+.Pp
+.Sh HISTORY
+.Pp

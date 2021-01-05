@@ -1,0 +1,8 @@
+#ifndef AVATAR_CONFIG_H
+#define AVATAR_CONFIG_H
+
+/* Optional TPL */
+
+#cmakedefine HAVE_AVATAR_CHECK
+
+#endif /* AVATAR_CONFIG_H */

@@ -1,0 +1,16 @@
+.Ss MPI OPTIONS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl P Ar file
+.It Fl -partition-file Ar file
+Specifies the
+.Ar partition
+file which contains one exodus file per line. These exodus files will be used for training.
+Each exodus file, or partition, is processed independently.
+.El
+.Pp
+NOTE: See the
+.Sx FILENAMES
+section for details on what files are used for what purpose.
+.Pp
+NOTE: The partition file may contain a single exodus file.

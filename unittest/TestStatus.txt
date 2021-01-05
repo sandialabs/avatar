@@ -1,0 +1,25 @@
+(*) = test has same result as before
+(**) = test failed before but now passes
+
+api:            (*) pass
+array:          (*) pass
+bagging:        (*) bagging20 "distribution incorrect"
+blearning:      (*) pass
+boost:          (*) pass
+crossval_util:  (*) pass
+distinct:       (*) pass
+diversity:      (*) pass
+evaluate:       (*) check_accuracies "voted accuracy is incorrect"
+gain:           (*) pass
+ivote:          (*) pass
+knn:            (**) pass
+majbagging:     (*) pass
+missing:        (*) pass
+proximity:      (*) pass
+rwdata:         (**)    test_file_test "Dataset metas should have the same number of fclib sequences",
+                (*)     trees_file_test "Ensembles should have same number of classes"
+                (*)     (all others)
+smote:          (*) pass
+tree:           (*) pass
+util:           (*) pass
+

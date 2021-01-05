@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#ifndef __SAFE_MEMORY__
+#define __SAFE_MEMORY__
+
+#define OOM 48 // error code for out of memory (oops, Caesar)
+
+void* e_calloc(size_t count, size_t size);
+void* e_realloc(void* p, size_t size);
+char* e_strdup(const char* s1);
+
+#endif // __SAFE_MEMORY__

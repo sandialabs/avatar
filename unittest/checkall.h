@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+Suite *array_suite(void);
+Suite *bagging_suite(void);
+Suite *blearning_suite(void);
+Suite *boost_suite(void);
+Suite *crossval_util_suite(void);
+Suite *distinct_suite(void);
+Suite *diversity_suite(void);
+Suite *eval_suite(void);
+Suite *gain_suite(void);
+Suite *ivote_suite(void);
+Suite *knn_suite(void);
+Suite *majbag_suite(void);
+Suite *missing_suite(void);
+Suite *proximity_suite(void);
+Suite *rwdata_suite(void);
+Suite *smote_suite(void);
+Suite *tree_suite(void);
+Suite *util_suite(void);
+Suite *stringstream_suite(void);
+Suite *api_suite(void);

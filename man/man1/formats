@@ -1,0 +1,74 @@
+.Sh FORMATS
+.Pp
+.Ss AVATAR
+.Ar AVATAR
+format data consists of two pieces: a
+.Ar .data
+file and a
+.Ar .names
+file.
+.Pp
+The
+.Ar .names
+file contains the class and attribute specifications.
+There is one specification line per column of data in the .data file.
+The specifications are of the form:
+.Pp
+.Dl "[label] : continuous"
+.Dl "[label] : discrete value,value,value"
+.Dl "[label] : class value,value,value"
+.Pp
+.Ar label
+is an optional string label for the attribute or class. The attribute type is either
+.Ar continuous
+or
+.Ar discrete .
+Discrete attributes take on one of a finite set of values. The values are
+listed after the discrete keyword in a comma-separated list.
+As with the discrete attributes, the
+.Ar class
+specification line contains a comma-separated list of valid class values.
+.Pp
+The
+.Ar .data
+file contains the value of each attribute for each sample. The file
+may contain an optional comment line containing the attribute labels. If specified,
+these labels must match the labels as specified in the
+.Ar .names
+file.
+The data follows, one data point per line with the attribute values separated by commas.
+The truth class column can be anywhere and is specified on the command line with the
+.Fl -truth-column
+option. By default, the truth column is the last column in the file.
+.Pp
+The
+.Ar .test
+file follows the same conventions as the
+.Ar .data
+file. "Unlabeled" data may be used in the
+.Ar .test
+file if
+.Fl -output-accuracies
+and
+.Fl --output-confusion-matrix
+is not specified on the command line. Unlabeled data is data with the class set to
+a value not specified as a class value in the
+.Ar .names
+file or set to a blank or NULL value (i.e. no value).
+.Pp
+.Ss EXODUS CLASS CONFIGURATION
+This file contains the exodus variable to be used as the class definition and information
+to extract the classes from the variable data. If the class variables is specified
+in the class configuration file, it need not be specified on the command line via the
+.Fl -class-var
+option. A sample class config file is:
+.Pp
+.Dl "class_var_name Osaliency"
+.Dl "number_of_classes 5"
+.Dl "thresholds 0.2,0.4,0.6,0.8"
+.Pp
+The
+.Ar thresholds
+are used to split up the variable into classes. In the above example, class 0
+will contain all points for which the class variable is <=0.2; class 1 will
+contain all points for which the class variable is <=0.4; and so on.

@@ -1,0 +1,125 @@
+.\"
+.\"
+.\"
+.\"
+.\"
+.\"
+.\"
+.Dd 07 July 2007
+.Os
+.Dt AVATARMPI 1
+.Sh NAME
+.Nm avatarmpi
+.Nd "train decision trees under MPI"
+.Sh SYNOPSIS
+.Nm
+--format=NAME
+format-specific-arguments
+.Op tree-options
+.Op ensemble-options
+.Sh DESCRIPTION
+.Nm
+runs under MPI and
+operates on exodus\- or avatar\-format data to train decision trees.
+A single exodus file, or partition, can be operated on by multiple processes
+or multiple partitions can be distributed among the available processes.
+.Pp
+See the
+.Sx MPI DETAILS
+section for information on how
+.Nm
+interacts with MPI.
+.Sh ARGUMENTS AND OPTIONS
+.Pp
+.Ss REQUIRED ARGUMENTS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl o Ar format-type
+.It Fl -format Ar format-type
+.Ar format-type
+is either
+.Ar exodus
+or
+.Ar avatar .
+See the
+.Sx FORMATS
+section for details. The default is
+.Ar exodus
+.El
+.Pp
+.so man1/general_opts
+.Pp
+.so man1/exodus_args
+.It Fl -train-times Ar range
+Use the one-based timesteps given in
+.Ar range
+for training.
+.Ar Range
+is a comma and dash separated list of integers such as "1-4,6" or "5,7-10,12,14,20-22"
+.El
+.Pp
+.so man1/avatar_args
+.Pp
+.so man1/avatar_opts
+.Pp
+.so man1/tree_opts
+.Pp
+.so man1/ensemble_options
+.Pp
+.so man1/alt_filenames
+.Pp
+.so man1/misc_options
+.Pp
+.so man1/formats
+.Pp
+.Sh MPI DETAILS
+.Pp
+.Nm
+must be run via 
+.Xr mpirun 1 .
+The rank 0 process is used as a controller and does not participate in building the
+decision trees.
+.Pp
+For multiple partitions, the partitions are distributed across the available processes
+as much as possible so that the training is done in parallel (i.e. multiple trees 
+are trained at the same time) instead of in series (i.e. all processes focus on
+one partition until complete). For example, for three partitions and five processes
+(so that four are involved in the training) process 0 is the controller, processes
+1 and 4 initially start training partition 1, process 2 initially starts training partition
+2, and process 4 initially starts training partition 3.
+.Pp
+When a partition is completed, the processes that were working on it are assigned to
+other, unfinished partitions.
+.Pp
+.Sh EXAMPLES
+.Pp
+.Dl mpirun -np 5 avatarmpi -o exodus -P partitions -C can.classes --num-trees 20 --train-times 18-22
+.Pp
+Will train the partitions listed in the file named 'partitions' using 4 processes. The data
+is exodus format and the training
+data will be taken from timesteps 18, 19, 20, 21, and 22.
+The file 'can.classes' contains the exodus variable to use for the class as well as
+the thresholds to separate the values for the class variable into discrete classes.
+For each partition, 20 trees
+will be generated.
+.Pp
+.Dl mpirun -np 5 avatarmpi -o exodus -P partitions -C can.classes --num-trees 20 --train-times 18-22 --bagging=25
+.Pp
+Will do the same as the above statement except the trees will be built using bagging with 
+25% of training samples in each bag.
+.Pp
+.Dl mpirun -np 5 avatarmpi -o exodus -P partitions -C can.classes --num-trees 20 --train-times 18-22 -I --bite-size 100
+.Pp
+Will do the same as the above statement except the trees will be built using ivoting with each
+bite containing 100 samples.
+.Pp
+.Sh FILES
+.Pp
+.Pp
+.Sh SEE ALSO
+.Pp
+.Xr avatardt 1 ,
+.Xr crossvalfc 1 ,
+.Pp
+.Sh HISTORY
+.Pp

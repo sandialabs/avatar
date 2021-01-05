@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,43 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "util.h"
+#include "safe_memory.h"
+
+void* e_calloc(size_t count, size_t size)
+{
+    void* ptr = calloc(count, size);
+    if (ptr == NULL) {
+        fprintf(stderr, "error: OOM at %s, line %d\n", __FILE__, __LINE__);
+        exit(OOM);
+    }
+    return ptr;
+}
+
+void* e_realloc(void* p, size_t size)
+{
+    void* ptr = realloc(p, size);
+    if (ptr == NULL) {
+        fprintf(stderr, "error: OOM at %s, line %d\n", __FILE__, __LINE__);
+        exit(OOM);
+    }
+    return ptr;
+}
+
+char* e_strdup(const char* s1)
+{
+  // Safety check for a null pointer
+  if (! s1) {
+    return 0;
+  }
+    char* copy = av_strdup(s1);
+    if (copy == NULL) {
+        fprintf(stderr, "error: OOM at %s, line %d\n", __FILE__, __LINE__);
+        exit(OOM);
+    }
+    return copy;
+}

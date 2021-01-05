@@ -1,0 +1,23 @@
+install(
+  FILES
+    alt_filenames
+    avatar_args
+    avatar_opts
+    avatardt.1
+    #avatarmpi.1
+    crossvalfc.1
+    data_inspector.1
+    diversity.1
+    ensemble_options
+    exodus_args
+    filenames
+    formats
+    general_opts
+    misc_options
+    output_options
+    proximity.1
+    skew
+    tree_opts
+  DESTINATION
+    man/man1
+    )

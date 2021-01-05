@@ -1,0 +1,16 @@
+.Ss AVATAR-SPECIFIC OPTIONS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl -include Ar range
+.It Fl -exclude Ar range
+Include or exclude the one-based column indices in 
+.Ar range .
+.Fl -include
+and
+.Fl -exclude
+may be specified together and may each be specified multiple times. They
+are applied left to right.
+.It Fl -truth-column Ar num
+The one-based column index in the data file which corresponds to the true class for each sample.
+The default is the last column in the file.
+.El

@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+/**
+ * Return the median value from an array of sorted values.
+ * If n is even: median is the average of the two middle values
+ * If n is odd: median is the middle value
+ * 
+ * @param  values the sorted data in an array
+ * @param  n the length of the array
+ * @return the median value
+ **/
+double av_stats_median_from_sorted_data(const double values[], const int n);
+
+/**
+ * Return the standard deviation from an array of values.
+ *
+ * @param  values the array of data
+ * @param  n the length of the array
+ * @return the standard deviation
+ **/
+double av_stats_sd(const double values[], const int n);
+
+/**
+ * Comparator for double values
+ **/
+int av_stats_comp_double(const void* d1, const void* d2);

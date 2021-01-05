@@ -1,0 +1,210 @@
+## $Source: /home/Repositories/avatar/avatar-copy/src/Makefile,v $
+## $Revision: 1.32 $
+## $Date: 2007/10/17 19:49:27 $
+## 
+## Makefile for tools
+##
+include ./Makefile.include
+
+SH=/bin/sh
+#CC=gcc
+
+# Where Avatar is installed
+PRJ_DIR =
+
+# Short-cuts for machines on which I frequently compile
+HOSTNAME_TEST = $(shell hostname)
+# Config for calico
+ifeq (${HOSTNAME_TEST},calico)
+PRJ_DIR = $(HOME)/avatar
+endif
+# Config for Powerbook
+ifeq (${HOSTNAME_TEST},kegelmeyer-PB.local)
+PRJ_DIR = /usr/local/Avatar
+endif
+
+##
+## Files (in alphabetical order)
+##
+
+TOOL_SRCS = \
+	array.c \
+	bagging.c \
+	distinct_values.c \
+	evaluate.c \
+	gain.c \
+	ivote.c \
+	memory.c \
+	missing_values.c \
+	options.c \
+	rw_data.c \
+	subspaces.c \
+	tree.c \
+	util.c \
+	att_noising.c
+ifneq (${IS_GNU},yes)
+TOOL_SRCS += \
+	gnu/getopt.c \
+	gnu/getopt1.c
+endif
+TOOL_SRCS_MPI = \
+	ivotempi.c \
+	mpi.c \
+	treempi.c
+
+# files for this build
+TOOL_OBJS = $(TOOL_SRCS:.c=.o)
+TOOL_HDRS = $(TOOL_SRCS:.c=.h)
+TOOL_OBJS_MPI = $(TOOL_SRCS_MPI:.c=.o)
+TOOL_HDRS_MPI = $(TOOL_SRCS_MPI:.c=.h)
+TOOL_EXES = \
+	crossvalfc \
+	avatardt \
+	rfFeatureValue
+TOOL_EXES_MPI = \
+	avatarmpi
+#	crossvalmpi
+TOOL_SCRIPTS = \
+	data_inspector
+MAN_FILES = \
+	avatardt \
+	crossvalfc \
+	data_inspector
+MAN_FILES_MPI = \
+	avatarmpi
+MAN_INCLUDES = \
+	avatar_args \
+	avatar_opts \
+	ensemble_options \
+	exodus_args \
+	filenames \
+	formats \
+	general_opts \
+	misc_options \
+	output_options \
+	tree_opts
+
+# all files for release target
+ALL_FILES = Makefile $(TOOL_HDRS) $(TOOL_SRCS) $(TOOL_HDRS_MPI) $(TOOL_SRCS_MPI)
+
+##LDFLAGS += -lMallocDebug
+
+##
+## Targets
+##
+
+ifeq (${USE_MPI},yes)
+all : $(TOOL_EXES_MPI)
+else
+all : $(TOOL_EXES)
+endif
+
+# tools are dependent on the fc library
+# this will update the local excutables if the library is new,
+# but will not automatically update the library if it needs it
+#$(TOOL_EXES) : $(FCLIB_HOME)/lib/libfc.a $(TOOL_OBJS)
+#	$(CC) -o $@ $(CFLAGS) $(TOOL_OBJS) \
+#                -L../$(DDLIB_PATH) $(LDFLAGS) $(FCLDLIB) $(DDLDLIB) $(LDLIBS)
+avatarmpi : $(FCLIB_HOME)/lib/libfc.a $(TOOL_OBJS) $(TOOL_OBJS_MPI) dtmpi.o crossval.h
+	$(CC) -o avatarmpi $(CFLAGS) $(TOOL_OBJS) $(TOOL_OBJS_MPI) dtmpi.o \
+                -L../$(DDLIB_PATH) $(LDFLAGS) $(FCLDLIB) $(DDLDLIB) $(LDLIBS)
+crossvalmpi : $(FCLIB_HOME)/lib/libfc.a $(TOOL_OBJS) $(TOOL_OBJS_MPI) crossvalmpi.o crossval.h
+	$(CC) -o crossvalmpi $(CFLAGS) $(TOOL_OBJS) $(TOOL_OBJS_MPI) crossvalmpi.o \
+                -L../$(DDLIB_PATH) $(LDFLAGS) $(FCLDLIB) $(DDLDLIB) $(LDLIBS)
+crossvalfc : $(FCLIB_HOME)/lib/libfc.a $(TOOL_OBJS) crossval.o crossval.h
+	$(CC) -o crossvalfc $(CFLAGS) $(TOOL_OBJS) crossval.o \
+                -L../$(DDLIB_PATH) $(LDFLAGS) $(FCLDLIB) $(DDLDLIB) $(LDLIBS)
+avatardt : $(FCLIB_HOME)/lib/libfc.a $(TOOL_OBJS) dt.o crossval.h
+	$(CC) -o avatardt $(CFLAGS) $(TOOL_OBJS) dt.o \
+                -L../$(DDLIB_PATH) $(LDFLAGS) $(FCLDLIB) $(DDLDLIB) $(LDLIBS)
+rfFeatureValue : $(FCLIB_HOME)/lib/libfc.a $(TOOL_OBJS) rffv.o crossval.h
+	$(CC) -o rfFeatureValue $(CFLAGS) $(TOOL_OBJS) rffv.o \
+                -L../$(DDLIB_PATH) $(LDFLAGS) $(FCLDLIB) $(DDLDLIB) $(LDLIBS)
+
+clean : 
+	$(RM) $(TOOL_OBJS) $(TOOL_EXES) $(TOOL_OBJS_MPI) $(TOOL_EXES_MPI) dt.o dtmpi.o crossval.o crossvalmpi.o rffv.o gnu/*.o $(GCOV_FILES)
+
+# generic compiling directive for objects
+% : %.c %.h crossval.h
+	$(CC) -c -o $@ $(CFLAGS) -I../${DDLIB_PATH} $(CPPFLAGS) $@.c
+
+# generic compiling directive for wrappers
+% : %.in
+	rm -f $@
+	sed -e "s@CORE_PATH=\.@CORE_PATH=`pwd`@g" $@.in > $@
+	chmod +x $@
+
+ifeq (${USE_MPI},yes)
+install : $(TOOL_EXES_MPI) 
+	cp -f $(TOOL_EXES_MPI) $(TOOL_SCRIPTS_MPI) $(INSTALL_DIR)/bin
+	-for i in $(TOOL_WRAPPERS); do \
+	  rm -f $(INSTALL_DIR)/bin/$$i; \
+	  sed -e "s@CORE_PATH=\.@CORE_PATH=$(INSTALL_DIR)/bin@g" $$i.in > \
+	               $(INSTALL_DIR)/bin/$$i; \
+	  chmod +x $(INSTALL_DIR)/bin/$$i; \
+	done
+	-for i in $(TOOL_EXES_MPI) $(TOOL_SCRIPTS_MPI) $(TOOL_WRAPPERS_MPI); do \
+	   chmod go=rx $(INSTALL_DIR)/bin/$$i; \
+	done
+	-for i in $(MAN_FILES_MPI); do \
+	   cp -f man/man1/$$i.1 $(INSTALL_DIR)/man/man1/$$i.1; \
+	done
+	-for i in $(MAN_INCLUDES); do \
+	   cp -f man/man1/$$i $(INSTALL_DIR)/man/man1; \
+	done
+else
+install : $(TOOL_EXES) 
+	mkdir -p $(INSTALL_DIR)/bin
+	mkdir -p $(INSTALL_DIR)/man/man1
+	cp -f $(TOOL_EXES) tools/$(TOOL_SCRIPTS) $(INSTALL_DIR)/bin
+	-for i in $(TOOL_WRAPPERS); do \
+	  rm -f $(INSTALL_DIR)/bin/$$i; \
+	  sed -e "s@CORE_PATH=\.@CORE_PATH=$(INSTALL_DIR)/bin@g" $$i.in > \
+	               $(INSTALL_DIR)/bin/$$i; \
+	  chmod +x $(INSTALL_DIR)/bin/$$i; \
+	done
+	-for i in $(TOOL_EXES) $(TOOL_SCRIPTS) $(TOOL_WRAPPERS); do \
+	   chmod go=rx $(INSTALL_DIR)/bin/$$i; \
+	done
+	-for i in $(MAN_FILES); do \
+	   cp -f man/man1/$$i.1 $(INSTALL_DIR)/man/man1/$$i.1; \
+	done
+	-for i in $(MAN_INCLUDES); do \
+	   cp -f man/man1/$$i $(INSTALL_DIR)/man/man1; \
+	done
+endif
+
+uninstall : 
+	-for i in $(TOOL_EXES) $(TOOL_EXES_MPI) $(TOOL_SCRIPTS) $(TOOL_SCRIPTS_MPI) $(TOOL_WRAPPERS) $(TOOL_WRAPPERS_MPI); do \
+	   rm -f $(INSTALL_DIR)/bin/$$i; \
+	done
+	-for i in $(MAN_FILES) $(MAN_FILES_MPI); do \
+	   rm -f $(INSTALL_DIR)/man/man1/$$i.1; \
+	done
+	-for i in $(MAN_INCLUDES); do \
+	   rm -f $(INSTALL_DIR)/man/man1/$$i; \
+	done
+
+release :
+	-for i in $(ALL_FILES); do \
+	  (cd ..; tar --append --file=$(FC_RELEASE).tar \
+	    $(FC_RELEASE)/tools/$$i) \
+	done
+
+ifeq (${VERSION},)
+tarball :
+	echo Please supply version number as in 'make tarball VERSION=1.0'
+else
+tarball :
+	cd ../ ; ln -s src-redesign avatar-$(VERSION) ; tar -czf avatar-$(VERSION).tar.gz --exclude CVS avatar-$(VERSION)/Makefile avatar-$(VERSION)/Makefile.include avatar-$(VERSION)/*.c avatar-$(VERSION)/*.h avatar-$(VERSION)/tools/data_inspector avatar-$(VERSION)/man/man1/* avatar-$(VERSION)/gnu/* avatar-$(VERSION)/util/ExodusII-4.35-bundle.tar.gz avatar-$(VERSION)/util/README-exodusii-4.35 avatar-$(VERSION)/util/FCLib-1.4.1.tar.gz ; rm -f avatar-$(VERSION) ; mv avatar-$(VERSION).tar.gz src-redesign
+endif
+
+regtest-tarball :
+	tar -czf regtest.tar.gz --exclude CVS --exclude Diabetes-Data --exclude comp_with_OpenDT --exclude graphs --exclude pima-indians-diabetes --exclude t5k --exclude vote --exclude .cvsignore --exclude sanity_check_plots regtest
+
+#.PHONY : clean install uninstall release
+
+# Keep this last
+print-%:
+	@echo $* = $($*)
+

@@ -1,0 +1,389 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage{parskip}
+\usepackage[colorlinks]{hyperref} %colorlinks colors instead of boxing links
+
+\geometry{letterpaper,margin=1in}
+
+\begin{document}
+
+\title{Avatar Tools Tutorial}
+\author{W. Philip Kegelmeyer, wpk@sandia.gov\\Kenneth Buch, kabuch@sandia.gov}
+\date{1 November 2007}
+
+\maketitle
+\tableofcontents
+
+\newpage
+
+\section{Getting Help}
+
+Each executable has a man page and a \verb=--help= option. To access the man pages,
+set your \verb=$MANPATH= environment variable. For the bash shell, edit \verb=~/.bashrc=
+and add the lines:
+
+\begin{verbatim}
+MANPATH="/projects/ascdd/avatar/shasta/current/man:${MANPATH}"
+export MANPATH
+\end{verbatim}
+
+For the csh shell, edit \verb=~/.cshrc= and add the lines:
+
+\begin{verbatim}
+setenv MANPATH "/projects/ascdd/avatar/shasta/current/man:${MANPATH}"
+\end{verbatim}
+
+Of course, replace the path with the appropriate path for the installation on your particular system. Also,
+make sure you \verb=source ~/.bashrc= or \verb=source ~/.cshrc= after making the edits to have changes
+take effect.
+
+Now, you will be able to run
+
+\begin{verbatim}
+shell% man data_inspector
+shell% man avatardt
+shell% man crossvalfc
+shell% man rfFeatureValue
+shell% man avatarmpi
+\end{verbatim}
+
+Each executable also prints out a usage message if run with the \verb=--help= option.
+
+\section{Data Files}
+
+\subsection{Avatar Format}
+Avatar format is a plain text format very similar to the comma separated values (CSV) format that
+can be exported by most database programs. Unless you are already working with Exodus data natively, you'll
+want to convert your data into Avatar format. 
+
+\subsubsection{Training/Testing Data}
+
+The training and testing data have the same file format. There is an optional
+initial \verb=#labels= line which contains a comma-separated list of attribute labels and a
+label for the class. A typical line would look something like:
+
+\begin{verbatim}
+#labels Attribute 1, Attribute 2,Attribute 3 , Classification, Attribute 4
+\end{verbatim}
+
+Note that these labels, if they exist, \emph{must} match the labels in the \verb=.names= metadata file. 
+An easy way to ensure this is to use the provided \verb=data_inspector= tool, as described below. 
+
+Following the optional \verb=#labels= line is the data, i.e. attribute values and class labels,
+in comma-separated lines; one line per
+sample. See the next section for details on attribute values and class labels.
+
+Default file names are based on a common basename. The training data is in \verb=basename.data=
+and the testing data is in \verb=basename.test=. Alternate file names may be specified on the
+command line.
+
+\subsubsection{Metadata}
+
+The metadata for the training/testing data is in a separate file which, by default, is
+named \verb=basename.names=. This file contains one line per attribute and one line for the class.
+The format for each line is:
+
+\begin{verbatim}
+[label] : type value[,value ...]
+\end{verbatim}
+
+The initial ``label'' on each line is optional; it is fine for the line to start with the colon
+delimiter. Each label that is supplied must be matched by an entry in the \verb=#labels= line of the
+training/testing data file.
+
+The ``type'' is one of \verb=[class discrete continuous]=.
+For discrete and class lines, the type is followed by a comma-separated list of valid values.
+Note that there are no continuation lines so the entire list of values must be on the same
+line as the label and type.
+
+A typical metadata file which could match the data file described above could look like:
+
+\begin{verbatim}
+# Optional comment
+
+Attribute 1 : discrete big,small,smallest
+Attribute 2 : continuous
+Attribute 3 : continuous
+Classification : class normal, abnormal, unknown
+Attribute 4:discrete  red, yellow,blue
+\end{verbatim}
+
+\subsection{Exodus Format}
+
+\subsubsection{Training/Testing Data}
+
+The training and testing data are in ExodusII format files.
+
+\subsubsection{Metadata}
+
+The metadata file for the exodus format files contain information about the exodus variable
+designated as the class variable. The file specifies the number of classes and the
+thresholds used to divide up the floating point values into the classes.
+
+The file contains keyword/value pairs. The keywords are \verb=[class_var_name number_of_classes thresholds]=.
+The value of the \verb=class_var_name= keyword is the name of the exodus variable. The value of the
+\verb=number_of_classes= keyword is an integer. The value of the \verb=thresholds= keyword is
+a comma-separated list of floating point numbers.
+
+A sample
+metadata file is:
+
+\begin{verbatim}
+class_var_name Osaliency
+number_of_classes 5
+thresholds 0.2,0.4,0.6,0.8
+\end{verbatim}
+
+The thresholds are used to split up the variable into classes. In the
+above example, class 0 will contain all points for which the class variable
+is $\leq$0.2; class 1 will contain all points for which the class variable is $\leq$0.4; and so on.
+
+\section{Ensemble File}
+
+The ensemble file contains the trees generated by the avatar codes. The trees contained in this
+file are not meant to
+be human readable, though the metadata at the beginning of the file is a little more user-friendly. This
+metadata contains: the number of training examples used to generate the trees, the number of classes
+in the training data, the number of examples in each class, the number of attributes, the
+number of attributes that were skipped and not used to generate the trees, and the number of trees
+in the ensemble file. Following these values are lists of the type of each attribute, whether or not
+each attribute was skipped, and the missing value for each attribute.
+
+For avatar format data, some attribute values may be ``missing,'' i.e. not supplied in the
+training/test data file.
+If a value is missing, a ``?'' should be placed in the appropriate column of the pertinent row. When
+a value is missing, the Avatar Tools substitute a value pre-computed from the data. 
+The missing value
+for continuous attributes is the median of the known values and for discrete attributes is
+the most popular value.
+
+Here is an example metadata section in an ensemble file:
+
+\begin{verbatim}
+NumTrainingExamples  10088
+NumClasses           2
+NumExamplesPerClass: 7160 2928 
+NumAttributes        4
+NumSkippedAttributes 1
+NumTrees             50
+AttributeTypes: DISCRETE CONTINUOUS CONTINUOUS DISCRETE
+SkipAttributes: NOSKIP NOSKIP SKIP NOSKIP
+MissingAttributeValues: big,56.43,?,red
+\end{verbatim}
+
+\section{Predictions/Probabilities Files}
+
+\subsection{Avatar Format}
+
+When the \verb=--output-predictions= options is supplied,
+a new text file is generated. This file is a copy of testing data file but has a few extra columns.
+It will contain a column labeled \verb=Pred= which holds the majority vote class for the example.
+If the \verb=--output-margins= option is supplied, another column labeled \verb=Margin= is
+added which holds the delta between the probabilities of the leading two classes.
+If the \verb=--output-probabilities= option is supplied, the file will also contain one extra
+column for each class labeled \verb=Pr <class_label>= which holds the probability that this sample is
+the class.
+
+\subsection{Exodus Format}
+
+When the \verb=--output-predictions= options is supplied,
+a new exodus file is generated. This file has the same mesh as the testing data file but in the
+interest of space and time the original testing data is not replicated. There are three exodus variables
+in this file: \verb=Fold=, \verb=Truth=, \verb=Prediction=. The \verb=Fold= variable
+is only meaningful for \verb=crossvalfc=. The \verb=Truth= variable is the true class of the data point
+as determined by the class variable and thresholds specified in the metadata file. The \verb=Prediction=
+variable is the majority vote class for the data point. If the \verb=--output-probabilities= option is
+supplied, additional variables, one per class, are created which give the probability that the data
+point is that particular class.
+
+\section{Generating Metadata for Avatar Format}
+
+We will use the data in \verb=sample_data/CtlRmData3.data= to demonstrate using the Avatar Tools. If
+you look at this file, you will see the \verb=#labels= line at the beginning which contains labels for
+the attributes and the class. The data follows with one sample per line. The attribute and class
+values are separated by commas.
+
+The first thing we need to do is the generate the metadata file for this data file. We can use the
+\verb=data_inspector= script for this:
+
+\begin{verbatim}
+shell% data_inspector -w -d CtlRmData3.data -c 3 -t 0
+\end{verbatim}
+
+The \verb=-w= option causes the metadata file to be written to \verb=CtlRmData3.names=. The
+\verb=-c= option says that the truth (i.e. the class) is in the third column. The \verb=-t= option
+sets the discrete attribute threshold to 0. This forces all attributes to be interpreted as
+continuous which is what we want for this particular data set. Left as the default, a couple of the
+attributes would be interpreted as discrete since they have less than 10 unique values. This may cause
+problems for future data if that data has values for these attributes different from this data.
+
+We now have the data file and the metadata file and are ready to generate some trees.
+
+\section{Assessing Data Accuracy}
+
+Cross validation is way to get a sense of how accurate trees grown using current data will be on future,
+i.e. new, data. It does this by reserving a portion of the current data as testing data and using 
+the remainder of the data for training.
+This way, the testing is done on ``unseen'' samples.
+
+\verb=crossvalfc= performs either N-fold or 5x2 cross validation. In N-fold cross validation, the
+training data is divided into N equally-sized pieces (folds). Then, in essence, \verb=avatardt=
+is run N times with each fold being used as testing data once and the rest of the data being
+used as training data. In 5x2 cross validation, the data is divided into two folds (i.e. N=2) and \verb=avatardt=
+is run twice. This is repeated five times.
+
+If the \verb=--output-confusion-matrix= option is specified, an overall
+confusion matrix will be printed which, in the case of N-fold cross validation, gives an estimate
+of the accuracy of the entire data set with each sample being used as testing data only when it is \emph{not}
+used for training. For 5x2 cross validation, the result is an average of 2-fold cross validation over
+five instances.
+
+For our sample data, run:
+
+\begin{verbatim}
+shell% crossvalfc -o avatar --folds=10 -f CtlRmData3 --exclude=1,2 --truth=3 \
+--bagging --use-stopping-algorithm --output-predictions --output-probabilities \
+--output-confusion-matrix --no-save-trees
+\end{verbatim}
+
+Here we are using 10-fold cross validation. We are excluding the attributes in the first two columns since
+they are sample identifiers, and are not meaningful for classifying the data. We are specifying that the truth is in
+the third column. We are using 100\% bagging to generate the trees and the stopping algorithm to
+determine when to stop. We output predictions and probabilities and the confusion matrix. We are
+not saving the generated trees since, at this point, we are only interested in accessing how accurate
+the trees will be on new data.
+
+The output for the first of the ten folds should look something like:
+\begin{verbatim}
+Building Trees:   60
+Stopping Algorithm Result: 33 trees with an oob accuracy of 98.7103%
+Voted Accuracy   = 98.5148%
+Average Accuracy = 97.0647%
+                                   TRUTH
+Cam_defect Defect Optic defect No_defect Unknown White_defect 
+---------- ------ ------------ --------- ------- ------------ 
+        98      0            0         0       0            0   Cam_defect
+         1    186            0         1       0            2   Defect
+         0      0            5         2       0            0   Optics defect
+         0      2            0       279       0            0   No_defect     PREDICTIONS
+         0      0            0         0       5            0   Unknown
+         0      1            0         0       0           24   White_defect
+\end{verbatim}
+(Your results will vary slightly, since data is distributed randomly across the 10 folds.)
+
+After all ten folds have been run, an overall confusion matrix will be printed
+with an overall voted accuracy.
+\begin{verbatim}
+Overall Voted Accuracy = 98.1824%
+Overall Confusion Matrix:
+
+                                   TRUTH
+Cam_defect Defect Optic defect No_defect Unknown White_defect 
+---------- ------ ------------ --------- ------- ------------ 
+       973      6            1         3       0            3   Cam_defect
+        13   1847            3        11       2           23   Defect
+         0      1           49         2       0            0   Optics defect
+         3     14            1      2803       4            2   No_defect     PREDICTIONS
+         0      0            0         1      43            0   Unknown
+         0     17            0         0       0          227   White_defect
+\end{verbatim}
+
+A few notes about the results:
+
+\begin{itemize}
+\item The first fold resulted in 33 trees being generated. This was the optimal number of trees
+as defined by the stopping algorithm. Note that a total of 60 trees were grown but the best
+result was at 33 trees.
+\item The class for each sample in the testing data is determined by a majority vote of
+all the trees. The percentage of correct classifications is reported as \emph{Voted Accuracy}.
+\item For comparison, the \emph{Average Accuracy} is also reported. This is an equally-weighted
+average across all trees and all samples. In almost all cases, the average accuracy will be
+less than or equal to the voted accuracy. In some cases, e.g. when using ivoting, the
+average accuracy may be much lower than the voted accuracy.
+\item The confusion matrix shows how samples were classified and reports the
+misclassification trends. Zeros in all non-diagonal spots would be a result of 100\% accuracy.
+As an example of interpreting the array, look at the first column in the overall
+matrix and you can see that
+13 samples that were really ``Cam\_defect'' were classified as ``Defect'' by the ensemble and
+3 samples that were really ``Cam\_defect'' were classified as ``No\_defect''.
+\end{itemize}
+
+This will also generate a \verb=CtlRmData3.pred= file which contains the predicted class
+for each sample as well as the probability of each sample being each of the six classes (i.e.
+the liklihood of each class). You can use the cut(1) Unix command to extract just the
+relevant information:
+
+\begin{verbatim}
+shell% cut -f1-3,28-35 -d, CtlRmData3.pred
+\end{verbatim}
+
+This will pull out the  DEFECT\_NAME\_ID, DEFECT\_ID, and CLASSIFICATION columns along with the
+predicted class and probabilities.
+
+\section{Generating an Ensemble for New Data}
+
+To label new, future data, first use all the current data to build an ensemble of trees using:
+
+\begin{verbatim}
+shell% avatardt --train -o avatar -f CtlRmData3 --exclude=1,2 --truth=3 \
+--bagging --use-stopping-algorithm
+\end{verbatim}
+
+This will create a \verb=CtlRmData3.trees= file that contains the ensemble of trees. There won't be
+a predictions file or a confusion matrix or voted/average accuracies reported since no testing was
+done. You will see the out of bag (OOB) accuracy, though, as that can be extracted from the training
+data only. 
+
+\section{Labeling New Data}
+\subsection{Pre-labeled Data}
+
+You can label new data which already has a classification and which has \emph{not} been used
+to grow the ensemble in the previous step. You may want to do this for regression tests, as the
+existence of the known classification means you can assess the accuracy of the
+\verb=CtlRmData3.trees=  file. 
+
+To do this you need a \verb=CtlRmData3.test= file which has the same structure as the \verb=.data=
+file including the CLASSIFICATION column. Make sure the \verb=CtlRmData3.trees= file is there
+and run:
+
+\begin{verbatim}
+shell% avatardt --test -o avatar -f CtlRmData3 --exclude=1,2 --truth=3 \
+--output-predictions --output-probabilities --output-confusion-matrix
+\end{verbatim}
+
+This will print out the accuracies and confusion matrix for the new data and create a new 
+\verb=.pred= file. You can compare the CLASSIFICATION column with the Pred column to see
+which samples were mis-classified.
+
+\subsection{Unlabeled Data}
+
+You can also label new data that has not already been classified---i.e. truly unknown data.
+Again, put the data into \verb=CtlRmData3.test= with the same structure as the \verb=.data=
+file but leave the CLASSIFICATION column empty or put some unique string in it (``unique''
+meaning different from any of the valid class labels in the \verb=./names= file). Then run:
+
+\begin{verbatim}
+shell% avatardt --test -o avatar -f CtlRmData3 --exclude=1,2 --truth=3 \
+--output-predictions --output-probabilities --no-output-accuracies
+\end{verbatim}
+
+This will create a \verb=CtlRmData3.pred= file which will contain the predicted class for each
+sample.
+
+\section{Scaling Up and Other Suggestions}
+
+First, you should likely always use the \verb=--use-stopping-algorithm= option to set the ensemble
+size, as opposed to setting it to some fixed size. If you use a fixed size, there is a danger the
+ensemble will be too small and so less accurate than it might be,
+
+In terms of which options to use, and how to build trees more quickly, some suggestions would be:
+\begin{itemize}
+\item Use ``--bagging'' with the default, until that is too slow for your tastes.
+\item Then use ``--bagging --random-forests'' until that is too slow for your tastes.
+\item Then use ``--ivoting''. In this case, you might want to experiment with setting the bite size
+  via ``--bite-size''.
+\item And if even that is too slow, find a multi-processor machine, load your data on each
+  processor, and start to use \verb=avatarmpi=.
+\end{itemize}
+
+\end{document}

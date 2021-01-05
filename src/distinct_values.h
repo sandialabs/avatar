@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#ifndef __DISTINCT_VALUES__
+#define __DISTINCT_VALUES__
+
+short tree_insert(BST_Node **tree, Tree_Bookkeeping *books, float new_value);
+void tree_to_array(float *array, BST_Node *tree);
+void _tree_to_array(float *array, BST_Node *tree, int node, int *me);
+int translate(float *array, float value, int low, int high);
+int translate_discrete(char **map, int num_ids, char *value);
+
+void create_cv_subset(CV_Dataset data, CV_Subset *train);
+void populate_distinct_values_from_dataset(CV_Dataset data, CV_Subset *sub, AV_SortedBlobArray *blob);
+
+#endif

@@ -1,0 +1,44 @@
+#============================================================
+#Data Format            : avatar
+#Filestem               : sample
+#Truth Column           : 4
+#Number of Trees        : 1
+#Seed for *rand48       : 1294678813
+#Training Data          : ./sample.data
+#Names File             : ./sample.names
+#Ensemble File          : ./sample.trees
+#Verbosity              : 0
+#Split On Zero Gain     : FALSE
+#Collapse Subtrees      : TRUE
+#Dynamic Bounds         : TRUE
+#Minimum Examples       : 2
+#Split Method           : C45 Style
+#Save Trees             : TRUE
+#============================================================
+NumTrainingExamples  100
+NumClasses           2
+NumExamplesPerClass: 50 50
+NumAttributes        3
+NumSkippedAttributes 0
+NumTrees             1
+AttributeTypes: CONTINUOUS CONTINUOUS CONTINUOUS 
+SkipAttributes: NOSKIP NOSKIP NOSKIP 
+MissingAttributeValues: 1,2,3
+Tree 1
+SPLIT CONTINUOUS ATT# 0 < 0.5
+SPLIT CONTINUOUS ATT# 2 < 5
+LEAF Class 0 Proportions 7 3
+SPLIT CONTINUOUS ATT# 2 >= 5
+LEAF Class 1 Proportions 3 7
+SPLIT CONTINUOUS ATT# 0 >= 0.5
+SPLIT CONTINUOUS ATT# 1 < 10
+LEAF Class 0 Proportions 18 2
+SPLIT CONTINUOUS ATT# 1 >= 10
+SPLIT CONTINUOUS ATT# 0 < 25
+LEAF Class 0 Proportions 16 14
+SPLIT CONTINUOUS ATT# 0 >= 25
+LEAF Class 1 Proportions 4 26
+
+
+
+

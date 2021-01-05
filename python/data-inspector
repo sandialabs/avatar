@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+
+import argparse
+import avatar.data
+import avatar.names
+import logging
+import sys
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--data-file", "-d", default="-", help="""Input data file.  Use "-" for stdin.""")
+parser.add_argument("--discrete-threshold", "-t", type=int, default=10, help="""Controls whether a numeric attribute is considered discrete or continuous.  Default: %(default)s""")
+parser.add_argument("--exclude", "-x", type=int, default=[], nargs="+", help="""Mark one or more one-based columns as excluded in the output .names file.  Default: %(default)s""")
+parser.add_argument("--file-stem", "-f", default=None, help="Base filename.  The data file will be basename.data and the names file will be basename.names")
+parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error", "critical"], help="Set the log message threshold.  Default: %(default)s")
+parser.add_argument("--names-file", "-n", default="-", help="""Output names file.  Use "-" for stdout.""")
+parser.add_argument("--skiplines", type=int, default=0, help="""Number of lines to skip at the beginning of the input file.  Default: %(default)s.""")
+parser.add_argument("--truth-column", "-c", type=int, default=None, help="""Specifies the one-based column index containing the class.  By default, the last column will be assumed to be the truth column.""")
+parser.add_argument("--write-names-file", "-w", action="store_true", help="""Write the "best-guess" names file for the data file specified with --file-stem or --data-file.""")
+arguments = parser.parse_args()
+
+log = logging.getLogger()
+
+if arguments.log_level == "debug":
+  log.setLevel(logging.DEBUG)
+elif arguments.log_level == "info":
+  log.setLevel(logging.INFO)
+elif arguments.log_level == "warning":
+  log.setLevel(logging.WARNING)
+elif arguments.log_level == "error":
+  log.setLevel(logging.ERROR)
+elif arguments.log_level == "critical":
+  log.setLevel(logging.CRITICAL)
+
+log.addHandler(logging.StreamHandler())
+log.handlers[0].setFormatter(logging.Formatter("%(levelname)s - %(message)s"))
+
+if arguments.file_stem is not None:
+  arguments.data_file = arguments.file_stem + ".data"
+  arguments.names_file = arguments.file_stem + ".names"
+
+input = sys.stdin if arguments.data_file == "-" else open(arguments.data_file, "r")
+
+logging.info("Loading input from %s.", "stdin" if arguments.data_file == "-" else arguments.data_file)
+row_count, columns = avatar.data.load(input, arguments.skiplines)
+logging.info("Input contains %s observations, %s columns.", row_count, len(columns))
+truth_column = arguments.truth_column if arguments.truth_column is not None else len(columns)
+logging.info("Truth column: %s.", columns[truth_column-1].label)
+logging.info("Excluded columns: %s", " ".join([columns[index-1].label for index in arguments.exclude]))
+
+if arguments.write_names_file:
+  logging.info("Writing names to %s.", "stdout" if arguments.names_file == "-" else arguments.names_file)
+  avatar.names.guess(columns, sys.stdout if arguments.names_file == "-" else open(arguments.names_file, "w"), discrete_threshold=arguments.discrete_threshold, truth = truth_column-1, exclude = [exclude-1 for exclude in arguments.exclude])

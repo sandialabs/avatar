@@ -1,0 +1,71 @@
+## $Source: /home/Repositories/avatar/avatar-copy/modules/Makefile,v $
+## $Revision: 1.6 $
+## $Date: 2006/10/06 03:07:37 $
+## 
+## Makefile for modules
+##
+include ../Makefile.include
+
+##
+## Files (in alphabetical order)
+##
+
+LIB_PRIVATEHFILES = \
+	array.h \
+	regions.h
+
+LIB_SRCS = \
+	array.c \
+	regions.c
+#	displacements.c \
+
+# all files for release target
+ALL_FILES = Makefile ${LIB_PRIVATEHFILES} ${LIB_IO_PRIVATEHFILES} \
+	${LIB_PUBLICHFILES} ${LIB_SUPPORTHFILES} ${LIB_SRCS} ${LIB_IO_SRCS}
+
+# files for this build
+LIB_HFILES = $(LIB_PRIVATEHFILES)
+LIB_OBJS = $(LIB_SRCS:.c=.o)
+
+##
+## Targets (ranlib added to support OSX)
+##
+
+lib : $(DDLIB)
+
+$(DDLIB) : $(LIB_OBJS) 
+	ar -r $@ $?
+	ranlib $@
+
+clean :
+	$(RM) *.o libdd.a
+        
+$(LIB_OBJS) : $(LIB_HFILES)
+
+#generic compiling directive
+
+%.o : %.c
+	$(CC) -c -fPIC -o $@ $(CFLAGS) $(CPPFLAGS) $<
+
+# test changes
+regtest :
+	(cd ..; make regtest)
+check :
+	(cd ..; make check)
+
+install : $(DDLIB)
+	cp -f $(LIB_HFILES) $(INSTALL_DIR)/include
+	-for i in $(LIB_HFILES); do \
+		chmod go=r $(INSTALL_DIR)/include/$$i; \
+	done
+	cp -f $(DDLIB) $(INSTALL_DIR)/lib
+	chmod go=r $(INSTALL_DIR)/lib/$(DDLIB)
+	ranlib $(INSTALL_DIR)/lib/$(DDLIB)
+
+uninstall :
+	-for i in $(LIB_HFILES); do \
+	   rm -f $(INSTALL_DIR)/include/$$i; \
+	done
+	rm -f $(INSTALL_DIR)/lib/$(DDLIB)
+
+#.PHONY : lib clean regtest check install uninstall release

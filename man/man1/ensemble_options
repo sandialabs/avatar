@@ -1,0 +1,45 @@
+.Ss ENSEMBLE OPTIONS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl n Ar num
+.It Fl num-trees Ar num
+Build
+.Ar num
+trees. The default value is 1.
+.It Fl -use-stopping-algorithm
+Use a stopping algorithm to determine the optimal number of trees in the ensemble.
+This option overrides
+.Fl num-trees
+and can only be specified with
+.Fl -bagging
+or
+.Fl -ivoting
+.It Fl -slide-size Ar num
+For the stopping algorithm, the size of the averaging window. The default value is 5.
+.It Fl -build-size Ar num
+For the stopping algorithm, the number of trees to add at each iteration.
+The default value is 20.
+.It Fl B Ar num
+.It Fl -bagging= Ar num
+Use bagging with 
+\fInum\fR% of training samples in each bag. Default value is 100.
+.It Fl F Ar num
+.It Fl -random-forests= Ar num
+Use random forests splitting on the best 
+.Ar num
+attributes. Default value is log2(num_attributes) + 1.
+.It Fl S Ar num
+.It Fl -random-subspaces= Ar num
+Use random subspaces with \fInum\fR% of attributes. Default value is 50.
+.It Fl I
+.It Fl -ivoting
+Use ivoting.
+.It Fl -bite-size Ar num
+For ivoting, use a bite size of
+.Ar num .
+The default value is 50.
+.It Fl -ivote-p-factor Ar fraction
+For ivoting, use a p-factor of
+.Ar fraction .
+The default value is 0.75.
+.El

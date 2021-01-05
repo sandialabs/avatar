@@ -1,0 +1,12 @@
+.Ss MISCELLANEOUS OPTIONS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl -seed Ar num
+Use
+.Ar num
+as the seed for the random number generator. By default, the random number generator
+is seeded with a random number generated from the current time and current process id.
+.It Fl v
+.It Fl -verbose
+Increase the verbosity of fclib functions. May be specified multiple time.
+.El

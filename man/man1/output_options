@@ -1,0 +1,58 @@
+.Ss OUTPUT OPTIONS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl -output-accuracies
+.It Fl -no-output-accuracies
+Turn on or off the printing of voted and average accuracies from the testing data.
+By default, if
+.Fl -test
+or
+.Fl -test-times
+is not specified, this option is off; if one of the test options is specified, this option is on.
+If 
+.Fl -output-confusion-matrix
+is specified, this option is turned on as long as the previous condition is met.
+.It Fl -output-confusion-matrix
+Print the confusion matrix for the testing data.
+.It Fl -output-predictions
+Output the predicted class for each sample in the testing data. For
+.Ar exodus
+data, a new exodus file named
+.Ar predictions.ex2
+is created using the same mesh
+as the input datafile. This file contains three variables:
+.Ar Fold ,
+.Ar Truth ,
+and
+.Ar Prediction .
+The Fold variable's value is the cross-validation fold to which the point belonged.
+The Truth variable's value is the same as the class variable from the input datafile.
+The Prediction variable's value is the class predicted by the decision tree.
+For
+.Ar avatar
+data, a new file is created and named using the filestem and
+.Ar .pred
+as the extension. This file contains a copy of all the data in the input datafile
+with an added column containing the predicted class for the sample.
+.It Fl -output-probabilities
+Output the probability of each sample being classified as each class. The predicted class
+(as specified above) is always stored when this option is specified. For
+.Ar exodus
+data, num_classes variables are added to the predictions file and the value at each
+data point is the probability that the data point is classified as that class. For
+.Ar avatar
+data, num_classes columns are added to the predictions file. Each column is the probability
+that the data sample will be classified as that class.
+.It Fl -verbose-oob
+Print the out-of-bag accuracy for the ensemble after each
+tree is added. The values are printed to a file named
+the same as the input data file but with the extension
+.Ar .oob-data .
+.It Fl -output-margins
+Adds a column to the
+.Ar Predictions
+file which contains the 
+.Ar class margin .
+The class margin is the delta between the probability of the most likely
+class and the probability of the second most likely class.
+.El

@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+void init_matrix(DT_Ensemble ensemble, CV_Subset data, int ***matrix);
+double compute_pcdm(int num_trees, int num_examples, int **matrix);
+double compute_interrater_kappa(int num_trees, int num_examples, int **matrix);
+double compute_Q_statistic(int num_trees, int num_examples, int **matrix);
+double compute_dietterich_kappa(int num_trees, int num_classes, int num_examples, int **matrix, Args_Opts args);

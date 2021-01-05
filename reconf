@@ -1,0 +1,5 @@
+#!/bin/sh
+
+rm -rf config.status config.log autom4te.cache configure
+/sw/bin/autoconf
+exit

@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,33 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+/**
+ * \file checkall.h
+ * \brief Header for all checks.
+ *
+ * $Source: /usr/local/Repositories/fcdmf/fclib/unittest/checkall.h,v $
+ * $Revision: 1.9 $ 
+ * $Date: 2005/12/21 23:03:45 $
+ *
+ * \modifications
+ *    - 12/20/04 WSK, created.
+ */
+
+#ifndef _CHECK_ALL_H_
+#define _CHECK_ALL_H_
+
+// global flags
+
+int isForking;  // whether the tests are forked or not
+FC_VerbosityLevel fc_messages; // library verbosity
+
+// Declation of suites (the default case e.g. check)
+Suite *arrayutils_suite(void);
+Suite *ccregions_suite(void);
+
+// Delcaration of suites for if using external data (e.g. check2)
+//Suite *safcover2_suite(void);
+//Suite *fileio2_suite(void);
+
+#endif // _CHECK_ALL_H_

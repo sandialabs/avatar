@@ -1,0 +1,99 @@
+
+#
+# @configure_input@
+#
+
+#------------------------------------------------
+# Variable Definition Section
+#------------------------------------------------
+
+BIN_DIR := @prefix@/bin
+INSTALL := @INSTALL@
+CC := @CC@
+CPPFLAGS := -I. @CPPFLAGS@
+DEFS := @DEFS@
+CFLAGS := @CFLAGS@ $(DEFS)
+CPP := @CPP@
+LDFLAGS := -L. @LDFLAGS@
+LIBS := @LIBS@
+HAVE_GETOPT_LONG := @HAVE_GETOPT_LONG@
+GCOV_FILES := @GCOV_FILES@
+MUST_COMPILE_GSL := @MUST_COMPILE_GSL@
+ifeq (${MUST_COMPILE_GSL},1)
+    CFLAGS += -I../src/gnu/include
+    LIBS += -L../src/gnu/lib -lgsl -lgslcblas
+endif
+
+EXECS := diversity \
+         proximity \
+	 remoteness \
+	 tree_stats
+EXEC_SRCS := diversity.c \
+             proximity.c \
+	     remoteness.c \
+	     tree_stats.c
+SRCS := diversity_measures.c \
+        proximity_utils.c \
+        ../src/array.c \
+        ../src/att_noising.c \
+	../src/attr_stats.c \
+        ../src/bagging.c \
+        ../src/balanced_learning.c \
+        ../src/boost.c \
+	../src/crossval_util.c \
+        ../src/distinct_values.c \
+        ../src/evaluate.c \
+        ../src/gain.c \
+	../src/heartbeat.c \
+        ../src/ivote.c \
+        ../src/knn.c \
+        ../src/memory.c \
+        ../src/missing_values.c \
+        ../src/options.c \
+        ../src/rw_data.c \
+	../src/safe_memory.c \
+	../src/schema.c \
+        ../src/skew.c \
+        ../src/smote.c \
+        ../src/subspaces.c \
+        ../src/tree.c \
+        ../src/util.c \
+        ../src/version_info.c
+
+OBJS := $(SRCS:.c=.o)
+
+all: bin
+
+bin : $(EXECS)
+
+clean:
+	rm -f *.o $(EXECS) core* $(GCOV_FILES)
+
+distclean: 
+	rm -f Makefile
+
+install:
+	$(INSTALL) -d $(BIN_DIR)
+	$(INSTALL) data_inspector $(BIN_DIR)
+	$(INSTALL) $(EXECS) $(BIN_DIR)
+
+mostlyclean:
+	rm -f *~ *.o core*
+
+uninstall:
+	echo Nothing to be done for the uninstall target.
+
+%.o: %.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
+
+diversity: $(OBJS) diversity.o ../src/version_info.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o diversity diversity.c
+
+proximity: $(OBJS) proximity.o ../src/version_info.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o proximity proximity.c
+
+remoteness: $(OBJS) remoteness.o ../src/version_info.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o $@ remoteness.o
+
+tree_stats: $(OBJS) tree_stats.o ../src/version_info.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o $@ tree_stats.o

@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+void int_array_sort(int n, int *array);
+void float_array_sort(int n, float *array);
+int array_union(int *array_a, int size_a, int *array_b, int size_b, int **Union);
+int array_intersection(int *array_a, int size_a, int *array_b, int size_b, int **Intersection);
+int array_diff(int *array_a, int size_a, int *array_b, int size_b, int **InANotB);
+int length_of_uid(int *array);
+void array_print(int *array, int size, char *title);
+int find_int(int value, int size, int *array);
+

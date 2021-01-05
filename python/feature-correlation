@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+
+# calc_feature_corr.py
+# Katie Rodhouse
+import sys
+import numpy as np
+import csv
+from scipy.stats.stats import pearsonr
+
+prefix = '.'.join(sys.argv[1].split('.')[:-1])
+lines = open(prefix + '.names').readlines()
+
+#Get information from avatar names file
+feature_names = []
+features = []
+for l in lines:
+    data = l.strip().split(' ')
+    if data[-1] != 'exclude':
+        try:
+            f = int(data[0])
+        except:
+            continue
+        if ': class' in l:
+            classloc = int(data [0])
+        else:
+            features.append(int(data[0]))
+            feature_names.append(data[1])
+
+print(features,classloc,feature_names)
+
+#Get information from avatar data file
+lines = open(prefix + '.data').readlines()
+nd = len(lines)-1
+nf = len(features)
+lines = lines[1:]
+
+#Fill correlation matrix with avatar data
+D = np.zeros((nd,nf))
+c_names = {}
+ids = []
+for k, l in enumerate(lines):
+    data = l.strip().split (',')
+
+    if data[0][0] == '#': #remove commented out lines
+        continue
+    for i, d in enumerate(data): #remove sparse data
+        if d == '':
+            data[i] =0.0
+
+    ids.append(data[0])
+    f = [float(d) for d in [data[x-1] for x in features]]
+    c = data[classloc-1]
+    if c not in c_names:
+        c_names[c] = len(c_names)
+    D[k,:] = f
+
+#Compute correlation matrix
+C = np.zeros((nf,nf))
+for f in range(nf):
+    for f2  in range(nf):
+        result = pearsonr(D[:,f],D[:,f2])
+        C[f,f2] = result[0]
+
+#0utput correlation matrix to file
+output = open(prefix + '.csv','w')
+tempstr = ','
+for f in feature_names:
+    tempstr += f + ','
+output.write(tempstr + '\n')
+
+for idx, f in enumerate(feature_names):
+    tempstr = ''
+    for c in C[idx]:
+        tempstr += ',' + str(c)
+    tempstr = f + tempstr
+    output.write(tempstr + '\n')
+

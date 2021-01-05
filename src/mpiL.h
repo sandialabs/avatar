@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#define AT_MPI_BUFMAX 25000000
+#define AT_MPI_ROOT_RANK 0
+
+void derive_MPI_OPTIONS( void );
+void derive_MPI_EXAMPLE( void );
+void derive_MPI_TREENODE( void );
+void broadcast_options(Args_Opts *Args);
+void _broadcast_subset(CV_Subset *sub, int myrank, Args_Opts args);
+void receive_subset(CV_Subset *sub, int myrank, Args_Opts args);
+void send_subset(CV_Subset *sub, int send_to, Args_Opts args);
+void receive_one_tree(char *buf, int *pos, DT_Node **tree, int num_classes, int nodes);
+void send_trees(DT_Node **trees, Tree_Bookkeeping *books, int num_classes, int my_num);
+int check_mpi_error(int err, char *label);
+
+typedef enum {
+    MPI_SUBSETMETA_TAG = 0,
+    MPI_SUBSETDATA_TAG = 1,
+    MPI_PERM2SEND_TAG = 2,
+    MPI_TREENODE_TAG = 3,
+    MPI_VOTE_CACHE_TAG = 4
+} MPI_TAG_TYPE;
+
+typedef enum {
+    AT_SEND_NO_TREE,
+    AT_SEND_ONE_TREE,
+    AT_RECEIVE_NEW_DATA
+} AT_TREE_PASSING_CODE;

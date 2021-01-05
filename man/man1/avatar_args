@@ -1,0 +1,10 @@
+.Ss AVATAR-SPECIFIC ARGUMENTS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl f Ar string
+.It Fl -filestem Ar string
+The training data is read from the file named
+\fIstring\fR.data, the testing data is read from the file named
+\fIstring\fR.test, and the trees are written to/read from the file named
+\fIstring\fR.trees.
+.El

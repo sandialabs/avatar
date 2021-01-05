@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#ifndef __OPTIONS__
+#define __OPTIONS__
+
+Args_Opts process_opts(int argc, char **argv);
+void late_process_opts(int num_atts, int num_examples, Args_Opts *args);
+void set_output_filenames(Args_Opts *args, Boolean force_input, Boolean force_output);
+void free_Args_Opts(Args_Opts args);
+void free_Args_Opts_Full(Args_Opts args);
+void read_classes_file(CV_Class *class, Args_Opts *args);
+int sanity_check(Args_Opts *args);
+void read_partition_file(CV_Partition *partition, Args_Opts *args);
+void print_skewed_per_class_stats(FILE *fh, char *comment, Args_Opts args, CV_Metadata meta);
+void display_dtmpi_opts(FILE *fh, char *comment, Args_Opts args);
+void display_dt_opts(FILE *fh, char *comment, Args_Opts args, CV_Metadata meta);
+void display_cv_opts(FILE *fh, char *comment, Args_Opts args);
+void display_fv_opts(FILE *fh, char *comment, Args_Opts args);
+
+#endif // __OPTIONS__

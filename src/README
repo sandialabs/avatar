@@ -1,0 +1,30 @@
+Avatar requires fclib and can be build with or without exodus.
+Both fclib and exodus are in the util directory.
+Compile fclib with/without exodus and then compile avatar with/without exodus.
+As with fclib, modify the Makefile.include file for your system and then run
+
+make install
+
+To install the MPI version of the avatar tools run
+
+make install USE_MPI=yes
+
+Relevant configuration variables are:
+
+HAVE_EXODUS
+HAVE_LIBXML2
+LIBXML2CONFIG
+IS_GNU (If your getopt handles long options, IS_GNU=yes. Otherwise IS_GNU=no.)
+FCLIB_HOME
+NETCDF_HOME (if compiling with exodus)
+EXODUS_HOME (if compiling with exodus)
+INSTALL_DIR
+MPI_HOME
+
+For both fclib and avatar, make sure HAVE_SAF=no and then don't worry about
+SAF_HOME or HDF5_HOME
+
+If you have questions, contact:
+
+Philip Kegelmeyer, wpk@sandia.gov
+Ken Buch, kabuch@sandia.gov

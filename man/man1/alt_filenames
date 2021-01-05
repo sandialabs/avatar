@@ -1,0 +1,25 @@
+.Ss ALTERNATE FILENAMES
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl -train-file= Ar file
+For
+.Ar avatar
+data, override the default filename for training data.
+.It Fl -test-file= Ar file
+For
+.Ar avatar
+data, override the default filename for testing data.
+.It Fl -names-file= Ar file
+For
+.Ar avatar
+data, override the default filename for metadata (the
+.Ar names
+file.
+.It Fl -trees-file= Ar file
+Override the default filename for the ensemble of trees.
+.It Fl -predictions-file= Ar file
+Override the default filename for the predictions file.
+.It Fl -oob-file= Ar file
+Override the default filename for the verbose oob data.
+.El
+.Pp

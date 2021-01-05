@@ -1,0 +1,213 @@
+
+#
+# @configure_input@
+#
+
+#------------------------------------------------
+# Variable Definition Section
+#------------------------------------------------
+
+#STATIC_LIB := libTest.a
+#SHARED_LIB := libTest.so
+
+#LIB_DIR := @prefix@/lib
+#INC_DIR := @prefix@/include
+#DOC_DIR := @prefix@/doc
+BIN_DIR := @prefix@/bin
+MAN_DIR := @prefix@/man
+
+#ARCHIVE := @ARCHIVE@
+#SHARED  := @SHARED@
+#BUILD_SO := @BUILD_SO@
+COMPILER := @COMPILER@
+CPPFLAGS := -I. @CPPFLAGS@
+#CXX := @CXX@
+#CXXFLAGS := @CXXFLAGS@
+CC := @CC@
+DEFS := @DEFS@
+HAVE_MPI := @HAVE_MPI@
+CFLAGS := @CFLAGS@ $(DEFS)
+ifeq (${HAVE_MPI},1)
+    CFLAGS += -DHAVE_MPI=1
+else
+    CFLAGS += -DHAVE_MPI=\"\"
+endif
+CPP := @CPP@
+DEP_SUFFIX := @DEP_SUFFIX@
+#DOCXX := @DOCXX@
+INSTALL := @INSTALL@
+LDFLAGS :=  -L. @LDFLAGS@
+LIBS := @LIBS@
+#USE_MPI := @USE_MPI@
+#IS_GNU := @IS_GNU@
+HAVE_GETOPT_LONG := @HAVE_GETOPT_LONG@
+MPICC := @MPICC@
+MPI_LIBS := @MPI_LIBS@
+MPI_CPPFLAGS := @MPI_CPPFLAGS@
+MPI_LDFLAGS := @MPI_LDFLAGS@
+#MAKEDEPFLAGS = @MAKEDEPFLAGS@
+GCOV_FILES := @GCOV_FILES@
+MUST_COMPILE_GSL := @MUST_COMPILE_GSL@
+ifeq (${MUST_COMPILE_GSL},1)
+    CFLAGS += -I./gnu/include
+    LIBS += -L./gnu/lib -lgsl -lgslcblas
+endif
+
+EXECS := avatardt \
+         crossvalfc \
+         rfFeatureValue
+
+ifeq (${HAVE_MPI},1)
+EXECS += avatarmpi
+#        crossvalmpi
+endif
+
+EXEC_SRCS :=  dt.c \
+              crossval.c \
+              rffv.c
+
+EXEC_SRCS_MPI := dtmpi.c 
+#		 crossvalmpi.c
+
+SRCS := array.c \
+        att_noising.c \
+	attr_stats.c \
+        bagging.c \
+	balanced_learning.c \
+	boost.c \
+	crossval_util.c \
+        distinct_values.c \
+        evaluate.c \
+        gain.c \
+	heartbeat.c \
+        ivote.c \
+	knn.c \
+        memory.c \
+        missing_values.c \
+        options.c \
+        rw_data.c \
+	safe_memory.c \
+	schema.c \
+	skew.c \
+	smote.c \
+        subspaces.c \
+        tree.c \
+        util.c \
+	version_info.c
+SRCS_MPI := ivotempi.c \
+            mpi.c \
+            treempi.c
+
+ 
+OBJS := $(SRCS:.c=.o)
+ifneq (${HAVE_GETOPT_LONG},1)
+OBJS +=  gnu/getopt.o \
+         gnu/getopt1.o
+endif
+OBJS_MPI := $(SRCS_MPI:.c=.o)
+DEP := $(SRCS:.c=$(DEP_SUFFIX))
+INCS := $(wildcard *.h)
+
+#------------------------------------------------
+# Rule Definition Section
+#------------------------------------------------
+
+all: bin
+
+bin: $(EXECS)
+
+clean:
+	rm -f *.o $(EXECS) core* $(GCOV_FILES)
+
+distclean: clean
+	rm -f Makefile
+
+help:
+	@echo ' '
+	@echo 'Targets         Description'
+	@echo '====================================================='
+	@echo 'all             Build the executables'
+	@echo ' '
+	@echo 'install         Install the executables and man pages'
+	@echo ' '
+	@echo 'mostlyclean     Remove all files constructed during'
+	@echo '                a build EXCEPT executables'
+	@echo ' '
+	@echo 'clean           Remove all files constructed during'
+	@echo '                a build INCLUDING executables'
+	@echo ' '
+	@echo 'distclean       Restore the build environment back'
+	@echo '                to its distribution state'
+	@echo ' '
+
+install:
+	$(INSTALL) -d $(BIN_DIR) $(MAN_DIR)
+	$(INSTALL) $(EXECS) $(BIN_DIR)
+
+mostlyclean:
+	rm -f *~ *.o core*
+
+uninstall:
+	echo Nothing to be done for the uninstall target.
+
+#%.o: %.c
+#	$(CC) $(MAKEDEPFLAGS) -c $(CFLAGS) $(CPPFLAGS) $<
+
+ivotempi.o: ivotempi.c
+	$(MPICC) -c $(CFLAGS) $(MPI_CPPFLAGS) $(CPPFLAGS) ivotempi.c
+mpi.o: mpi.c
+	$(MPICC) -c $(CFLAGS) $(MPI_CPPFLAGS) $(CPPFLAGS) mpi.c
+treempi.o: treempi.c
+	$(MPICC) -c $(CFLAGS) $(MPI_CPPFLAGS) $(CPPFLAGS) treempi.c
+dtmpi.o: dtmpi.c
+	$(MPICC) -c $(CFLAGS) $(MPI_CPPFLAGS) $(CPPFLAGS) dtmpi.c
+crossvalmpi.o: crossvalmpi.c
+	$(MPICC) -c $(CFLAGS) $(MPI_CPPFLAGS) $(CPPFLAGS) crossvalmpi.c
+
+%.o: %.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
+
+avatardt : $(OBJS) dt.o version_info.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o avatardt dt.c
+crossvalfc : $(OBJS) crossval.o version_info.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o crossvalfc crossval.c
+rfFeatureValue : $(OBJS) rffv.o version_info.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o rfFeatureValue rffv.c
+avatarmpi : $(OBJS) $(OBJS_MPI) dtmpi.o version_info.o
+	$(MPICC) $(MPI_LIBS) $(CPPFLAGS) $(MPI_CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(MPI_LDFLAGS) $(OBJS) $(OBJS_MPI) dtmpi.o $(LIBS) -o avatarmpi
+crossvalmpi : $(OBJS) $(OBJS_MPI) crossvalmpi.o version_info.o
+	$(MPICC) $(MPI_LIBS) $(CPPFLAGS) $(MPI_CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(MPI_LDFLAGS) $(OBJS) $(OBJS_MPI) crossvalmpi.o $(LIBS) -o crossvalmpi
+
+AT_VERSION_NUMBER = "1.1"
+SVN_VERSION_NUMBER = "1408"
+
+version_info.c: FORCE
+	@echo "#include <stdlib.h>" > .version_info.c;
+	@echo "#include <stdio.h>" >> .version_info.c;
+	@echo "#include <string.h>" >> .version_info.c;
+	@echo "#include \"version_info.h\"" >> .version_info.c;
+	@echo "char *get_version_string() {" >> .version_info.c;
+	@echo "    char *version;" >> .version_info.c;
+	@echo "    int size = strlen(\""$(AT_VERSION_NUMBER)"\") + strlen(\""$(SVN_VERSION_NUMBER)"\");" >> .version_info.c;
+	@echo "    version = (char *)malloc((size+2) * sizeof(char));" >> .version_info.c;
+	@echo "    sprintf(version, \"%s.%s\", \""$(AT_VERSION_NUMBER)"\", \""$(SVN_VERSION_NUMBER)"\");" >> .version_info.c;
+	@echo "    return version;" >> .version_info.c; 
+	@echo "}" >> .version_info.c; 
+	@if [ -f version_info.c ]; then \
+	        if diff version_info.c .version_info.c >/dev/null; then \
+	            echo "Files same"; \
+	            rm -f .version_info.c; \
+	        else \
+	            echo "Files different"; \
+	            mv .version_info.c version_info.c; \
+	        fi;\
+	else     \
+	        echo "Not found"; \
+	        mv .version_info.c version_info.c;\
+	fi;
+	@echo "Done";
+
+version_info.o: version_info.c
+	gcc -c version_info.c
+
+FORCE: ;

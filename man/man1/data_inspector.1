@@ -1,0 +1,157 @@
+\"
+\"
+\"
+\"
+\"
+\"
+\"
+.Dd 03 October 2007
+.Os
+.Dt DATA_INSPECTOR 1
+.Sh NAME
+.Nm data_inspector
+.Nd "check avatar format data files and generate names files"
+.Sh SYNOPSIS
+.Nm
+(
+--file-stem=BASENAME
+|
+--data-file=FILENAME )
+.Op options
+.Sh DESCRIPTION
+.Nm
+will check the consistency of a data and names file pair.
+It can also generate a "best-guess" names file for an existing data file.
+.Sh ARGUMENTS AND OPTIONS
+.Ss REQUIRED ARGUMENTS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl d Ar file
+.It Fl -data-file Ar file
+Use
+.Ar file
+as the data file.
+.It Fl n Ar file
+.It Fl -names-file Ar file
+Use
+.Ar file
+as the names file.
+.It Fl f Ar string
+.It Fl -file-stem Ar string
+Use
+.Ar string
+as the base filename. The data file will be
+.Ar basename.data
+and the names file will be
+.Ar basename.names .
+.It Fl w
+.It Fl -write-names-file
+Writes the "best-guess" names file for the data file specified with the
+.Fl -file-stem
+or
+.Fl -data-file option .
+Do not specify the
+.Fl -names-file
+option with
+.Fl --write-names-file .
+.It Fl t Ar int
+.It Fl -discrete-threshold Ar int
+When writing the "best-guess" names file, this option controls whether an
+attribute is considered
+.Ar discrete
+or
+.Ar continuous .
+The default is 10. See the
+.Sx ATTRIBUTE-TYPE
+section for details on how
+.Nm
+determines the attribute types.
+.It Fl c Ar int
+.It Fl -truth-column Ar int
+Specifies the one-based column index containing the class.
+If not specified, defaults to the last column.
+.It Fl p
+.It Fl -print-metadata
+Prints a summary of the 
+.Ar names
+file. This is on by default.
+.It Fl -nop
+.It Fl --noprint-metadata
+Turn off the printing of the metadata summary.
+.El
+.Pp
+.Sh ATTRUBUTE-TYPES
+.Pp
+When writing the "best-guess" names file, the following attribute types are used:
+.Pp
+.Ar continous
+attributes have only numbers as valid values and the number of unique values is greater than the
+argument to the
+.Fl -discrete-threshold
+option.
+.Pp
+.Ar discrete
+attributes have either only strings as valid values or only numbers and the number of unique
+values is less than or equal to the argument to the
+.Fl -discrete-threshold
+option. Note that any number of string-only values is still considered discrete no matter
+what the discrete threhold is.
+.Pp
+.Ar mixed
+attributes have both strings and numbers as valid values and the number of unique values which
+are numbers is greater than the discrete threshold. 
+.Ar mixed
+attributes are written as 
+.Ar continuous
+attributes in the names file.
+Only the string values are printed in the metadata summary.
+.Pp
+.Sh FORMAT-ERRORS
+The following conditions are checked by
+.Nm
+and errors are reported even when printing of the metadata has been turned off.
+.Pp
+.Ar correct number of attributes :
+The first line of the data file defines the number of attributes. The number of
+attributes in each subsequent line is counted to make sure it is the same as the first.
+.Pp
+.Ar valid class value :
+The class value is checked against the list of valid values in the names file.
+.Pp
+.Ar missing class list :
+The names file must have a list of valid values in the class definition line.
+.Pp
+.Ar attribute labels :
+If the data file contains a 
+.Ar #labels
+line, the attribute and class labels must match the labels in the names file.
+.Pp
+.Ar valid discrete attribute values :
+Discrete attributes must have a value that is in the list of valid values in the names file.
+.Pp
+.Sh EXAMPLES
+.Pp
+.Dl data_inspector -d hcars-0911.data -w
+.Pp
+Will read "hcars-0911.data" and generate "hcars-0911.names" using a discrete threshold of 10
+and assuming the class values are given in the last column.
+.Pp
+.Dl data_inspector -t 20 -d hcars-0911.data -w -c 1
+.Pp
+Will read "hcars-0911.data" and generate "hcars-0911.names" using a discrete threshold of 20
+and assuming the class values are given in the first column.
+.Pp
+.Dl data_inspector -d hcars-0911.data -n hcars-0911.names
+.Pp
+Will verify the data with the given names file and print a summary of errors and a metadata summary.
+.Sh FILES
+.Pp
+.Pp
+.Sh SEE ALSO
+.Pp
+.Xr avatardt 1,
+.Xr avatarmpi 1,
+.Xr crossvalfc 1
+.Pp
+.Sh HISTORY
+.Pp

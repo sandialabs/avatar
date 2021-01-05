@@ -1,0 +1,42 @@
+
+#
+# @configure_input@
+#
+
+#------------------------------------------------
+# Variable Definition Section
+#------------------------------------------------
+
+MAN_DIR := @prefix@/man
+INSTALL := @INSTALL@
+MAN_FILES := alt_filenames \
+	     avatar_args \
+	     avatar_opts \
+	     avatardt.1 \
+	     crossvalfc.1 \
+	     data_inspector.1 \
+	     diversity.1 \
+	     ensemble_options \
+	     exodus_args  \
+	     filenames \
+	     formats \
+	     general_opts \
+	     misc_options \
+	     output_options \
+             proximity.1 \
+             skew \
+	     tree_opts
+ifeq (${HAVE_MPI},1)
+MAN_FILES += avatarmpi.1
+endif
+
+distclean: 
+	rm -f Makefile
+
+install:
+	$(INSTALL) -d $(MAN_DIR)/man1
+	$(INSTALL) -m 0444 $(MAN_FILES) $(MAN_DIR)/man1
+
+uninstall:
+	echo Nothing to be done for the uninstall target.
+

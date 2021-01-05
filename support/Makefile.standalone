@@ -1,0 +1,38 @@
+MANPAGES = ../man/man1/alt_filenames \
+           ../man/man1/avatar_args \
+           ../man/man1/avatar_opts \
+           ../man/man1/avatardt.1 \
+           ../man/man1/avatarmpi.1 \
+           ../man/man1/crossvalfc.1 \
+           ../man/man1/data_inspector.1 \
+           ../man/man1/ensemble_options \
+           ../man/man1/exodus_args \
+           ../man/man1/filenames \
+           ../man/man1/formats \
+           ../man/man1/general_opts \
+           ../man/man1/misc_options \
+           ../man/man1/output_options \
+           ../man/man1/tree_opts
+
+all : tutorial.pdf manpagepdfs
+
+BASE = tutorial
+tutorial.pdf : tutorial.tex
+	latex tutorial.tex
+	latex tutorial.tex
+	dvipdf tutorial
+
+tutorial.tex :
+
+manpagepdfs : $(MANPAGES)
+	man -M ../man -t avatardt | ps2pdf - avatardt.pdf
+	man -M ../man -t avatarmpi | ps2pdf - avatarmpi.pdf
+	man -M ../man -t crossvalfc | ps2pdf - crossvalfc.pdf
+	man -M ../man -t data_inspector | ps2pdf - data_inspector.pdf
+	touch manpagepdfs
+
+clean :
+	rm -f ${BASE}.aux ${BASE}.dvi ${BASE}.log ${BASE}.out ${BASE}.toc
+
+realclean :
+	rm -f ${BASE}.pdf ${BASE}.aux ${BASE}.dvi ${BASE}.log ${BASE}.out ${BASE}.toc

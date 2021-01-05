@@ -1,0 +1,158 @@
+
+#
+# @configure_input@
+#
+
+#------------------------------------------------
+# Variable Definition Section
+#------------------------------------------------
+
+#STATIC_LIB := libTest.a
+#SHARED_LIB := libTest.so
+
+#LIB_DIR := @prefix@/lib
+#INC_DIR := @prefix@/include
+#DOC_DIR := @prefix@/doc
+BIN_DIR := @prefix@/bin
+MAN_DIR := @prefix@/man
+
+#ARCHIVE := @ARCHIVE@
+#SHARED  := @SHARED@
+#BUILD_SO := @BUILD_SO@
+COMPILER := @COMPILER@
+CPPFLAGS := -I. -I../util/check/src @CPPFLAGS@
+#CXX := @CXX@
+#CXXFLAGS := @CXXFLAGS@
+CC := @CC@
+DEFS := @DEFS@
+HAVE_MPI := @HAVE_MPI@
+CFLAGS := @CFLAGS@ $(DEFS)
+ifeq (${HAVE_MPI},1)
+    CFLAGS += -DHAVE_MPI=1
+else
+    CFLAGS += -DHAVE_MPI=\"\"
+endif
+CPP := @CPP@
+DEP_SUFFIX := @DEP_SUFFIX@
+#DOCXX := @DOCXX@
+INSTALL := @INSTALL@
+LDFLAGS :=  -L. @LDFLAGS@
+LIBS := @LIBS@
+#USE_MPI := @USE_MPI@
+#IS_GNU := @IS_GNU@
+HAVE_GETOPT_LONG := @HAVE_GETOPT_LONG@
+MPICC := @MPICC@
+MPI_LIBS := @MPI_LIBS@
+MPI_CPPFLAGS := @MPI_CPPFLAGS@
+MPI_LDFLAGS := @MPI_LDFLAGS@
+#MAKEDEPFLAGS = @MAKEDEPFLAGS@
+MUST_COMPILE_GSL := @MUST_COMPILE_GSL@
+ifeq (${MUST_COMPILE_GSL},1)
+    CFLAGS += -I../src/gnu/include
+    LIBS += -L../src/gnu/lib -lgsl -lgslcblas
+endif
+
+CHECK_HOME := ../util/check
+
+CK_CPPFLAGS := $(CPPFLAGS) -I$(CHECK_HOME)/src
+CK_LDFLAGS := $(LDFLAGS) -L$(CHECK_HOME)/src
+CK_LDLIBS := $(LDLIBS) -lcheck
+
+##
+## Files (in alphabetical order)
+##
+
+CHECK_HFILES := checkall.h
+CHECK_MAIN := checkall.c
+CHECK_SRCS := \
+	checkarray.c \
+	checkbagging.c \
+	checkblearning.c \
+	checkboost.c \
+	checkcrossval_util.c \
+	checkdistinct.c \
+	checkdiversity.c \
+	checkeval.c \
+	checkgain.c \
+	checkivote.c \
+	checkknn.c \
+	checkmajbagging.c \
+	checkmissing.c \
+        checkproximity.c \
+	checkrwdata.c \
+	checksmote.c \
+	checktree.c \
+	checkutil.c \
+	util.c \
+	checkapi.c \
+
+TOOL_OBJS := \
+	../src/avatar_api.o \
+	../src/array.o \
+	../src/att_noising.o \
+	../src/bagging.o \
+	../src/balanced_learning.o \
+	../src/boost.o \
+	../src/crossval_util.o \
+	../src/distinct_values.o \
+	../src/evaluate.o \
+	../src/gain.o \
+	../src/heartbeat.o \
+	../src/ivote.o \
+	../src/knn.o \
+	../src/memory.o \
+	../src/missing_values.o \
+	../src/options.o \
+	../src/rw_data.o \
+	../src/safe_memory.o \
+	../src/schema.o \
+	../src/skew.o \
+	../src/smote.o \
+	../src/subspaces.o \
+	../src/tree.o \
+	../src/util.o \
+	../src/version_info.o \
+	../tools/diversity_measures.o \
+	../tools/proximity_utils.o
+
+CHECK_OBJS := $(CHECK_SRCS:.c=.o)
+CHECK_EXES := $(CHECK_MAIN:.c=)
+
+ALL_FILES = Makefile $(CHECK_HFILES) $(CHECK_MAIN) $(CHECK_SRCS)
+
+
+##
+## Targets
+##
+
+first : $(CHECK_EXES)
+
+all : check
+
+check: first
+	./checkall
+
+parse_error : parse_error.c
+	$(CC) -o $@ $(CFLAGS) $(CK_CPPFLAGS) \
+		parse_error.c $(CHECK_OBJS) $(TOOL_OBJS) \
+		$(CK_LDFLAGS) $(CK_LDLIBS)
+
+checkall : $(TOOL_OBJS) checkall.c $(CHECK_HFILES) $(CHECK_OBJS)
+	$(CC) -o $@ $(CFLAGS) $(CK_CPPFLAGS) \
+		$(CHECK_MAIN) $(CHECK_OBJS) $(TOOL_OBJS) \
+		$(CK_LDFLAGS) $(CK_LDLIBS) $(LIBS)
+
+clean : 
+	$(RM) *.o $(CHECK_EXES) $(GCOV_FILES)
+
+release :
+	-for i in $(ALL_FILES); do \
+	  (cd ..; tar --append --file=$(FC_RELEASE).tar \
+	    $(FC_RELEASE)/unittest/$$i) \
+	done
+
+# generic compiling directives
+%.o : %.c $(CHECK_HFILES) ../src/crossvalfc ../src/avatardt
+	$(CC) -c -o $@ $(CFLAGS) -I../$(DDLIB_PATH) $(CK_CPPFLAGS) $<
+
+.PHONY : first check check2 clean release

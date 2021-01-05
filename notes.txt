@@ -1,0 +1,3 @@
+# Future work
+1. Remove static allocations in C files
+2. 

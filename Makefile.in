@@ -1,0 +1,78 @@
+#
+# Copyright (c) 2004 Limit Point Systems, Inc.
+#
+# @configure_input@
+#
+
+#------------------------------------------------
+# Variable Definition Section
+#------------------------------------------------
+
+SVN_VERSION_NUMBER = `svnversion trunk`
+DIST_SRC = avatar-1.1.$(SVN_VERSION_NUMBER)
+DIST_TAR = avatar-1.1.$(SVN_VERSION_NUMBER).tar
+
+#------------------------------------------------
+# Rule Definition Section
+#------------------------------------------------
+
+all:
+	(cd src/gnu && $(MAKE) $@) || exit 1 ;
+	(cd src && $(MAKE) $@) || exit 1 ;
+	(cd tools && $(MAKE) $@) || exit 1 ;
+
+bin:
+	(cd src/gnu && $(MAKE) $@) || exit 1 ;
+	(cd src && $(MAKE) $@) || exit 1 ;                        
+	(cd tools && $(MAKE) $@) || exit 1 ;                        
+
+clean:
+	(cd src/gnu && $(MAKE) $@) || exit 1 ;
+	(cd src && $(MAKE) $@) || exit 1 ;
+	(cd tools && $(MAKE) $@) || exit 1 ;
+	(cd unittest && $(MAKE) $@) || exit 1 ;
+	rm -f *~ core* *.o
+	rm -rf autom4te.cache
+
+distclean: clean
+	(cd src/gnu && $(MAKE) $@) || exit 1 ;
+	(cd src && $(MAKE) $@) || exit 1 ;                           
+	(cd tools && $(MAKE) $@) || exit 1 ;                           
+	(cd man/man1 && $(MAKE) $@) || exit 1 ;	
+	rm -f config.cache config.log config.status Makefile
+
+check : all
+	(cd util && $(MAKE) $@) || exit 1;
+	(cd unittest && $(MAKE) $@) || exit 1;
+
+regtest: all
+	(cd regtest && $(MAKE) $@) || exit 1;
+
+regclean:
+	(cd regtest && $(MAKE) $@) || exit 1;
+
+lcov: all
+	(cd regtest && $(MAKE) $@) || exit 1;
+
+help:
+	(cd src && $(MAKE) $@) || exit 1 ;
+
+install: all
+	(cd src && $(MAKE) $@) || exit 1 ;	
+	(cd tools && $(MAKE) $@) || exit 1 ;	
+	(cd man/man1 && $(MAKE) $@) || exit 1 ;	
+
+mostlyclean:
+	(cd src/gnu && $(MAKE) $@) || exit 1 ;
+	(cd src && $(MAKE) $@) || exit 1 ;
+	(cd tools && $(MAKE) $@) || exit 1 ;
+
+uninstall:
+	(cd src && $(MAKE) $@) || exit 1 ;
+	(cd tools && $(MAKE) $@) || exit 1 ;
+
+src-release: all
+	cp configure configure.orig ; cp configure.src-unit configure ; cd ../ ; echo "Exporting to $(DIST_SRC)" ; svn export trunk $(DIST_SRC) ; cp -f $(DIST_SRC)/configure.src-unit $(DIST_SRC)/configure ; sed -e "s/SVN_VERSION_NUMBER = \`svnversion .\`/SVN_VERSION_NUMBER = \"$(SVN_VERSION_NUMBER)\"/" $(DIST_SRC)/src/Makefile.in > $(DIST_SRC)/src/Makefile.in.new ; mv -f $(DIST_SRC)/src/Makefile.in.new $(DIST_SRC)/src/Makefile.in ; tar -cf $(DIST_TAR) --exclude .cvsignore --exclude src-old --exclude stats --exclude auto_run_tests --exclude ExodusII-4.35-bundle.tar.gz --exclude FCLib-1.4.1.tar.gz --exclude regtest $(DIST_SRC) ; gzip $(DIST_TAR) ; rm -rf $(DIST_SRC) ; cd trunk ; mv configure.orig configure
+
+release: all
+	cp configure configure.orig ; cp configure.src-unit-reg configure ; cd ../ ; echo "Exporting to $(DIST_SRC)" ; svn export trunk $(DIST_SRC) ; cp -f $(DIST_SRC)/configure.src-unit-reg $(DIST_SRC)/configure ; sed -e "s/SVN_VERSION_NUMBER = \`svnversion .\`/SVN_VERSION_NUMBER = \"$(SVN_VERSION_NUMBER)\"/" $(DIST_SRC)/src/Makefile.in > $(DIST_SRC)/src/Makefile.in.new ; mv -f $(DIST_SRC)/src/Makefile.in.new $(DIST_SRC)/src/Makefile.in ; tar -cf $(DIST_TAR) --exclude .cvsignore --exclude src-old --exclude stats --exclude auto_run_tests --exclude ExodusII-4.35-bundle.tar.gz --exclude FCLib-1.4.1.tar.gz --exclude comp_with_OpenDT --exclude pima-indians-diabetes $(DIST_SRC) ; gzip $(DIST_TAR) ; rm -rf $(DIST_SRC) ; cd trunk ; mv configure.orig configure

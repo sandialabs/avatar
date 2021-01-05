@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#ifndef AVATAR_API_H
+#define AVATAR_API_H
+
+// Forward declaration
+struct Avatar_struct;
+typedef struct Avatar_struct Avatar_handle;
+
+Avatar_handle* avatar_load(char* filestem, char* names_file, int names_file_is_a_string, char* trees_file, int trees_file_is_a_string);
+
+Avatar_handle* avatar_train(int argc, char ** argv, char* names_file, int names_file_is_a_string, char* train_file, int train_file_is_a_string);
+
+void avatar_test(Avatar_handle* a, char* test_data_file, int test_data_is_a_string, int* predictions, float *probabilities); 
+
+void avatar_cleanup(Avatar_handle* a);
+
+int avatar_num_classes(Avatar_handle* handle);
+
+#endif // AVATAR_API_H

@@ -1,0 +1,65 @@
+.Sh FILENAMES
+.Pp
+WITHOUT the
+.Fl -partitions
+option:
+.Pp
+For
+.Ar exodus
+format data, if the value of the
+.Fl -datafile
+argument is
+.Ar foo.ex2
+then the training and testing data is taken from
+.Ar foo.ex2 
+and the ensemble is written to/read from
+.Ar foo.trees .
+.Pp
+For
+.Ar avatar
+format data, if the value of the
+.Fl -filestem
+argument is
+.Ar bar
+then
+.Ar bar.names
+is used for the class and attribute definition file,
+.Ar bar.data
+is used for the training data, and
+.Ar bar.test
+is used for the testing data.
+The ensemble is written to/read from
+.Ar bar.trees .
+.Pp
+WITH the
+.Fl -partitions
+option:
+.Pp
+For training on
+.Ar exodus
+format data, the
+.Fl -datafile
+option is ignored and the data is read from the exodus files
+listed in the partitions file and each partition's ensemble is
+written to a 
+.Ar .trees
+file following the naming convention above.
+For testing on
+.Ar exodus
+format data, the testing data is taken from the file named by the
+.Fl -datafile
+argument and the ensembles are read from the
+.Ar .trees
+files associated with the exodus files listed in the partitions file.
+.Pp
+For training on
+.Ar avatar
+format data, the data is read from the files listed in the partitions file.
+The
+.Ar .names
+file is taken from the
+.Fl -filestem
+argument if given or else from the first file in the partitions file with 
+.Ar .names
+substituted for
+.Ar .data .

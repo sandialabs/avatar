@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#ifndef READ_LINE_FROM_STRING_OR_FILE_H
+#define READ_LINE_FROM_STRING_OR_FILE_H
+
+// If is_filename, call fopen(string, mode) and return the resulting
+// FILE*.  Otherwise, return a string_file_handle*.  In either case,
+// caller is responsible for calling close_string_or_file on return
+// value.
+void* open_string_or_file_for_reading (const char* string, const int is_filename);
+
+// If is_file, call fclose(handle).  Otherwise, assume that handle is
+// a string_file_handle*, and call free(handle).
+void close_string_or_file (void* handle, const int is_file);
+
+// Read a line from the given handle (either FILE* or
+// string_file_handle*), and store the resulting pointer in
+// output_string_ptr.  Caller is responsible for calling free on it.
+// Return length of output string.
+int read_line_from_string_or_file (void* handle, char** buffer, const int is_file);
+
+#endif // READ_LINE_FROM_STRING_OR_FILE_H

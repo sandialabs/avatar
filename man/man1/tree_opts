@@ -1,0 +1,37 @@
+.Ss TREE BUILDING OPTIONS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl s Ar method
+.It Fl -split-method Ar method
+Use
+.Ar method
+as the split criteria. Must be one of
+.Ar C45
+(default),
+.Ar INFOGAIN ,
+.Ar GAINRATIO ,
+or
+.Ar HELLINGER .
+.It Fl z
+.It Fl -split-zero-gain
+Split on zero information gain or gain ratio. Off by default.
+.It Fl b
+.It Fl -subsample Ar N
+Use subsample of n points to find best split, if number of points at local node > n.  Default: don't subsample (use all data).
+.It Fl -collapse-subtree
+.It Fl --no-collapse-subtree
+Allow or do not allow subtrees to be collapsed. Default is to allow.
+.It Fl -dynamic-bounds
+Use a dynamic computation for the minimum number of examples that may be split.
+This is the default.
+.It Fl -no-dynamic-bounds
+Turn off the dynamic computation and use the hard lower bound set by
+.Fl -hard-limit-bounds .
+.It Fl m Ar num
+.It Fl -hard-limit-bounds Ar num
+Specify a hard lower bound for the minimum number of examples that may be split.
+Default value is 2.
+.It Fl -save-trees
+.It Fl -no-save-trees
+Turn on or off saving the trees to an ensemble file. The default value is on.
+.El

@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#ifndef __RESET__
+#define __RESET__
+
+#include "crossval.h"
+
+
+void reset_CV_Class(CV_Class *cvc) ;
+void reset_CV_Dataset(CV_Dataset *cvd) ;
+void reset_Exo_Data(Exo_Data *ed) ;
+void reset_CV_Example(CV_Example *cve) ;
+void reset_CV_Metadata(CV_Metadata *cvm) ;
+void reset_CV_Subset(CV_Subset *cvs) ;
+void reset_DT_Ensemble(DT_Ensemble *dte) ;
+
+#endif // __RESET__

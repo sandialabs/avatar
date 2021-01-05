@@ -1,0 +1,82 @@
+## 
+## Makefile for the feature characterization library
+##
+
+## Edit 'Makefile.include' to set compiler options and paths to libraries
+include Makefile.include
+
+##
+## Targets
+##
+
+# basic = the library and it's tools
+first : lib tools
+
+# target for lazy developers
+world : lib tools examples data regtest util check $(README_FILES)
+
+lib :
+	(cd modules; make lib)
+
+tools : lib
+	(cd tools; make tools)
+
+#examples : lib
+#	(cd examples; make examples)
+
+#data : lib
+#	(cd data; make data)
+
+util :
+	(cd util; make)
+
+#regtest: lib tools examples data
+#	(cd regtest; make regtest)
+
+#regtest2: lib tools examples data
+#	(cd regtest; make regtest2)
+
+check : lib data util
+	(cd unittest; make check)
+
+#check2 : lib data util
+#	(cd unittest; make check2)
+
+#interfaces : lib
+#	(cd interfaces; make)
+
+#gui : lib interfaces
+#	(cd gui; make)
+
+# ranlib needed for OS X
+#FIX create install directory if it doesn't exist
+#FIX? keep in mind that some scripts are having paths changed w/ sed
+install : lib tools
+	mkdir -p $(INSTALL_DIR)/bin
+	chmod go=rx $(INSTALL_DIR)/bin
+	mkdir -p $(INSTALL_DIR)/include
+	chmod go=rx $(INSTALL_DIR)/include
+	mkdir -p $(INSTALL_DIR)/lib
+	chmod go=rx $(INSTALL_DIR)/lib
+	(cd modules; make install)
+	(cd tools; make install)
+
+uninstall :
+	(cd modules; make uninstall)
+	(cd tools; make uninstall)
+
+clean :
+#	(cd data; make clean)
+	(cd modules; make clean)
+#	(cd regtest; make clean)
+	(cd tools; make clean)
+#	(cd examples; make clean)
+	(cd unittest; make clean)
+
+#distclean : clean
+#	(cd util; make distclean)
+#	rm -rf bin doc include lib $(README_FILES)
+
+# to avoid conflicts with actual named files/directories
+.PHONY : first world lib tools examples data regtest util check doc dox \
+	install clean release

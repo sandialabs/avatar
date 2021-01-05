@@ -1,0 +1,644 @@
+#!/usr/bin/env perl
+use strict;
+use File::Basename;
+use Getopt::Long;
+use Scalar::Util;
+
+my $data_file = "";
+my $file_stem = "";
+my $names_file = "";
+my $write_names = 0;
+my $print_meta = 1;
+my $truth_column = -1;
+my $discrete_threshold = 10;
+my $exclude;
+my $help = 0;
+
+my $num_classes;
+my $class_label;
+my @classes;
+my $num_attributes;
+my @attribute_labels;
+my @attribute_types;
+my @attribute_values_str;
+my @attribute_values_num;
+
+my $err_msg_num_columns = "";
+my $err_msg_missing_truth = "";
+my $err_msg_invalid_truth = "";
+my $err_msg_missing_class_def = "";
+my $err_msg_invalid_label = "";
+my $err_msg_missing_att = "";
+my $err_msg_invalid_att = "";
+
+GetOptions(
+            'data-file|d=s'          => \$data_file,
+            'file-stem|f=s'          => \$file_stem,
+            'names-file|n=s'         => \$names_file,
+            'write-names-file|w'     => \$write_names,
+            'print-metadata|p!'      => \$print_meta,
+            'truth-column|c=s'       => \$truth_column,
+            'discrete-threshold|t=s' => \$discrete_threshold,
+            'exclude|x=s'            => \$exclude,
+            'help|h'                 => \$help,
+          );
+
+if ($help) {
+    print_usage();
+    exit(0);
+}
+
+# Need (a filestem alone) or (a filestem and a -w) or (datafile and (namesfile or -w))
+unless ( ($file_stem ne "" and $data_file eq "" and $names_file eq "" and ($write_names == 0 or $write_names == 1)) or
+         ($file_stem eq "" and $data_file ne "" and $names_file ne "" and $write_names == 0) or
+         ($file_stem eq "" and $data_file ne "" and $names_file eq "" and $write_names == 1) ) {
+    print_usage();
+    exit(-1);
+}
+
+# Make sure --truth-column is numeric
+$truth_column = int($truth_column);
+if ($truth_column == 0) {
+    printf("Value of --truth-column option must be numeric and is 1-based\n");
+    exit(-1);
+}
+
+# Set up .data and .names filenames from filestem
+if ($file_stem ne "") {
+    $data_file = $file_stem . ".data";
+    if ($write_names == 0) {
+        $names_file = $file_stem . ".names";
+    }
+}
+open DFH, $data_file or die "Could not read data-file: '$data_file'\n";
+
+# Get excluded attributes and eliminate whitespace
+my @excluded_features = split ',', $exclude;
+map { s/^\s*(\d+)\s*$/$1/ } @excluded_features;
+#print "@excluded_features\n";
+# Map excluded column numbers to attribute numbers
+# The user wants to supply column numbers but the existing code wants attribute numbers
+foreach (@excluded_features) {
+    if ($_ == $truth_column) {
+        print "WARNING: You are excluding the truth column which is probably not what you intended.\n";
+        print "The option '-x $truth_column' will have no effect for this run.\n\n";
+    } elsif ($_ > $truth_column) {
+        $_--;
+    }
+}
+
+if ($names_file ne "") {
+    
+    # Read .names file
+    my ($c_label, $class, $att_labels, $att_types, $att_values) = read_names_file($names_file);
+    $class_label = $c_label;
+    @classes = @$class;
+    @attribute_labels = @$att_labels;
+    @attribute_types = @$att_types;
+    @attribute_values_str = @$att_values;
+    
+    $num_classes = scalar @classes;
+    
+    # Read .data file one line at a time and look for problems
+    my ($line_num, $truth, @attributes) = read_data_line(*DFH, $truth_column);
+    # First line defines the correct number of attributes
+    $num_attributes = scalar @attributes;
+    # If this line is the #labels line, subtract one to allow for class and remove the class label from the list
+    if ($truth eq '#labels') {
+        $num_attributes--;
+        my $att = -1;
+        for (my $i = 0; $i < $num_attributes+1; $i++) {
+            if ($truth_column == $i+1 or ($truth_column < 0 and $i == $num_attributes)) {
+                $class_label = $attributes[$i];
+                next;
+            }
+            $att++;
+            $attributes[$att] = $attributes[$i];
+        }
+    }
+    while (defined $line_num) {
+        # Handle labels if that's what we got
+        if ($truth eq '#labels') {
+            my $att = -1;
+            for (my $i = 0; $i < $num_attributes+1; $i++) {
+                next if ($truth_column == $i+1 or ($truth_column < 0 and $i == $num_attributes));
+                $att++;
+                unless ($attribute_labels[$att] eq $attributes[$att]) {
+                    # Try extracting a leading integer then compare remainder after a leading space
+                    my $int_prefix = int($attribute_labels[$att]);
+                    my $space_should_be_here = index($attribute_labels[$att], $int_prefix) + length($int_prefix);
+                    my $should_be_space = substr($attribute_labels[$att], $space_should_be_here, 1);
+                    my $new_label = substr($attribute_labels[$att], $space_should_be_here+1);
+                    
+                    my $adjusted_att_num = $att + 1;
+                    if ($truth_column > 0 and $i >= $truth_column - 1) {
+                        $adjusted_att_num++;
+                    }
+                    
+                    unless($int_prefix == $adjusted_att_num and $new_label eq $attributes[$att]) {
+                        $err_msg_invalid_label .= sprintf("Attribute %d has inconsistent labels: '%s' and '%s'\n",
+                                                          $adjusted_att_num, $attributes[$att], $attribute_labels[$att]);
+                    }
+                }
+            }
+            ($line_num, $truth, @attributes) = read_data_line(*DFH, $truth_column);
+            next;
+        }
+        
+        # Make sure we have the correct number of attributes
+        if ($num_attributes != scalar @attributes) {
+            $err_msg_num_columns .= sprintf("Line %d has an incorrect number of attributes: %d instead of %d\n",
+                                                                      $line_num, scalar @attributes, $num_attributes);
+        }
+        # Check that the truth value is a valid class
+        if (defined $truth) {
+            unless( grep { /^$truth$/ } @classes ) {
+                $err_msg_invalid_truth .= sprintf("Line %d has an invalid truth value: '%s'\n", $line_num, $truth);
+            }
+        } else {
+            $err_msg_missing_truth .= sprintf("Line %d has no truth value\n", $line_num);
+        }
+        for (my $i = 0; $i < $num_attributes; $i++) {
+            if ($attributes[$i] =~ /^\s*$/) {
+                # Check that there are no missing values
+                $err_msg_missing_att .= sprintf("Line %d is missing a value for attribute %d\n", $line_num, $i+1);
+            } elsif (lc($attribute_types[$i]) eq 'discrete') {
+                # Check that discrete attributes have a valid value
+                unless( grep { /^$attributes[$i]$/ } @{$attribute_values_str[$i]}) {
+                    $err_msg_invalid_att .= sprintf("Line %d has an invalid value for attribute %d: '%s'\n",
+                                                                                    $line_num, $i+1, $attributes[$i]);
+                }
+            }
+        }
+        
+        ($line_num, $truth, @attributes) = read_data_line(*DFH, $truth_column);
+    }
+    
+} elsif ($write_names) {
+    
+    $names_file = basename($data_file, ".data") . ".names";
+    # Check for existing .names file and move out of the way
+    if (-e $names_file) {
+        printf("Saving %s as %s.bak\n", $names_file, $names_file);
+        system "mv $names_file $names_file.bak";
+    }
+    
+    # Read .data file one line at a time and look for problems and guess at a .names file
+    my ($line_num, $truth, @attributes) = read_data_line(*DFH, $truth_column);
+    # First line defines the correct number of attributes
+    $num_attributes = scalar @attributes;
+    # If this line is the #labels line, subtract one to allow for class and remove the class label from the list
+    if ($truth eq '#labels') {
+        $num_attributes--;
+        my $att = -1;
+        for (my $i = 0; $i < $num_attributes+1; $i++) {
+            if ($truth_column == $i+1 or ($truth_column < 0 and $i == $num_attributes)) {
+                $class_label = $attributes[$i];
+                next;
+            }
+            $att++;
+            $attributes[$att] = $attributes[$i];
+        }
+    }
+    while (defined $line_num) {
+        # Handle labels if that's what we got
+        if ($truth eq '#labels') {
+            my $att = -1;
+            for (my $i = 0; $i < $num_attributes+1; $i++) {
+                next if $truth_column == $i+1;
+                $att++;
+                $attribute_labels[$att] = $attributes[$att];
+            }
+            ($line_num, $truth, @attributes) = read_data_line(*DFH, $truth_column);
+            next;
+        }
+        
+        # Make sure we have the correct number of attributes
+        if ($num_attributes != scalar @attributes) {
+            $err_msg_num_columns .= sprintf("Line %d has an incorrect number of attributes: %d instead of %d\n",
+                                                                    $line_num, scalar @attributes, $num_attributes);
+        }
+        # Check that the truth value is a valid class or else add to list
+        if (defined $truth) {
+            my $found_it = 0;
+            for (my $i = 0; $i < scalar @classes; $i++) {
+                if ($truth eq $classes[$i]) {
+                    $found_it = 1;
+                }
+            }
+            if (not $found_it) {
+                push @classes, $truth;
+            }
+        } else {
+            $err_msg_missing_truth .= sprintf("Line %d has no truth value\n", $line_num);
+        }
+        # Collect attribute values to guess whether each attribute it discrete or continuous
+        for (my $i = 0; $i < scalar @attributes; $i++) {
+            my $ip1 = $i+1;
+            if (grep { /^$ip1$/ } @excluded_features) {
+                next;
+            }
+            if (is_numeric($attributes[$i])) {
+                # This is a number
+                # If we have <= $discrete_threshold values, add this one; otherwise ignore it
+                if (not defined scalar $attribute_values_num[$i]) {
+                    push @{$attribute_values_num[$i]}, $attributes[$i];
+                } elsif (@{$attribute_values_num[$i]} <= $discrete_threshold) {
+                    my $seen_it = 0;
+                    for (my $j = 0; $j < scalar @{$attribute_values_num[$i]}; $j++) {
+                        if ($attributes[$i] == $attribute_values_num[$i]->[$j]) {
+                            $seen_it = 1;
+                        }
+                    }
+                    if (not $seen_it) {
+                        push @{$attribute_values_num[$i]}, $attributes[$i];
+                    }
+                }
+            } elsif ($attributes[$i] =~ /^\s*$/) {
+                # An all-whitespace value is considered a missing value
+                $err_msg_missing_att .= sprintf("Line %d is missing a value for attribute %d\n", $line_num, $i+1);
+            } else {
+                # This is a string.
+                # Add this to the list of valid values regardless of how many there are
+                if (not defined scalar $attribute_values_str[$i]) {
+                    push @{$attribute_values_str[$i]}, $attributes[$i];
+                } else {
+                    my $seen_it = 0;
+                    for (my $j = 0; $j < scalar(@{$attribute_values_str[$i]}); $j++) {
+                        if ($attributes[$i] eq $attribute_values_str[$i]->[$j]) {
+                            $seen_it = 1;
+                        }
+                    }
+                    if (not $seen_it) {
+                        push @{$attribute_values_str[$i]}, $attributes[$i];
+                    }
+                }
+            }
+        }
+        
+        ($line_num, $truth, @attributes) = read_data_line(*DFH, $truth_column);
+    }
+    
+    $num_classes = scalar @classes;
+    
+    # Assign continuous, discrete, or mixed for attributes based on the number of distinct values
+    for (my $i = 0; $i < $num_attributes; $i++) {
+        my $ip1 = $i+1;
+        if (grep { /^$ip1$/ } @excluded_features) {
+            $attribute_types[$i] = 'exclude';
+        } elsif (defined $attribute_values_num[$i] and scalar(@{$attribute_values_num[$i]}) > $discrete_threshold) {
+            if (not defined $attribute_values_str[$i] or scalar(@{$attribute_values_str[$i]}) == 0) {
+                $attribute_types[$i] = 'continuous';
+                $attribute_values_str[$i] = undef;
+            } else {
+                $attribute_types[$i] = 'mixed';
+            }
+            $attribute_values_num[$i] = undef;
+        } else {
+            $attribute_types[$i] = 'discrete';
+        }
+        #$attribute_labels[$i] = undef;
+    }
+    
+    if ($err_msg_missing_class_def eq "") {
+        printf("Writing best-guess .names file to %s\n\n", $names_file);
+        write_names_file($names_file, $truth_column, $class_label, \@classes, \@attribute_labels,
+                        \@attribute_types, \@attribute_values_num, \@attribute_values_str);
+    } else {
+        printf("The best-guess .names file was NOT written because of invalid truth values\n\n");
+    }
+}
+
+if ($err_msg_num_columns ne "" or $err_msg_missing_truth ne "" or $err_msg_invalid_truth ne "" or
+    $err_msg_invalid_att ne "" or $err_msg_invalid_label ne "" or $err_msg_missing_class_def ne "") {
+    printf("ERRORS:\n\n");
+    if ($err_msg_num_columns ne "") {
+        print "$err_msg_num_columns\n";
+    }
+    if ($err_msg_missing_truth ne "") {
+        print "$err_msg_missing_truth\n";
+    }
+    if ($err_msg_invalid_truth ne "") {
+        print "$err_msg_invalid_truth\n";
+    }
+    if ($err_msg_missing_class_def ne "") {
+        print "$err_msg_missing_class_def\n";
+    }
+    if ($err_msg_invalid_label ne "") {
+        print "$err_msg_invalid_label\n";
+    }
+    if ($err_msg_invalid_att ne "") {
+        print "$err_msg_invalid_att\n";
+    }
+    if ($err_msg_missing_att ne "") {
+        print "$err_msg_missing_att\n";
+    }
+}
+if ($print_meta) {
+    print_metadata($truth_column, $class_label, \@classes, \@attribute_labels, \@attribute_types, \@attribute_values_num, \@attribute_values_str);
+}
+
+sub sort_num_or_lex {
+    my @items = @_;
+    my $all_nums = 1;
+    for (my $i = 0; $i < scalar @items; $i++) {
+        if (not is_numeric($items[$i])) {
+            $all_nums = 0;
+        }
+    }
+    if ($all_nums) {
+        @items = sort {$a <=> $b} @items;
+    } else {
+        @items = sort @items;
+    }
+    return @items;
+}
+
+sub sort_lex {
+    return sort @_;
+}
+
+sub sort_num {
+    return sort {$a <=> $b} @_;
+}
+
+sub getnum {
+    use POSIX qw(strtod);
+    my $str = shift;
+    $str =~ s/^\s+//;
+    $str =~ s/\s+$//;
+    $! = 0;
+    my($num, $unparsed) = strtod($str);
+    if (($str eq '') || ($unparsed != 0) || $!) {
+        return undef;
+    } else {
+        return $num;
+    }
+}
+
+sub is_numeric { defined getnum($_[0]) }
+
+{
+    my $line_num = 0;
+    
+    sub read_data_line {
+        local *FH = shift;
+        my $truth_col = shift;
+        my $truth = undef;
+        my $labels_line = 0;
+        my @attributes = ();
+        
+        my $line = <FH>;
+        if (not defined $line) {
+            # We've reached the end of the file
+            return(undef);
+        }
+        
+        $line_num++;
+        chomp $line;
+        # Compress lead-/trail-ing whitespace
+        $line =~ s/^\s+//;
+        $line =~ s/\s+$//;
+        # Check for #labels line and remove comments
+        if ($line =~ /#/) {
+            $line =~ s/#+/#/g;
+            if ($line =~ /^#\s?labels/) {
+                # Signal that we have a labels line
+                $labels_line = 1;
+                $line =~ s/^#\s?labels\s+/#labels,/;
+            } else {
+                # Remove it
+                $line =~ s/#.*$//;
+            }
+        }
+        # Ignore blank lines
+        while ($line =~ /^$/) {
+            $line = <FH>;
+            if (not defined $line) {
+                # We've reached the end of the file
+                return(undef);
+            }
+            
+            $line_num++;
+            chomp $line;
+            $line =~ s/^\s+//;
+            $line =~ s/\s+$//;
+            $line =~ s/#.*$//;
+        }
+        
+        my @line = split /\s*,\s*/, $line;
+        if ($labels_line == 1) {
+            ($truth, @attributes) = @line;
+        } else {
+            for (my $i = 0; $i < scalar @line; $i++) {
+                # Find truth value
+                # The if() statement has two effects for incorrect lines:
+                #   If --truth-column was specified and there are too few columns, all are considered attributes and
+                #       there is no truth value for this line.
+                #   If --truth-column was NOT specified and there are too few columns, the last is considered the truth
+                #       column no matter how many attribute columns there ends up being.
+                if ( ($truth_col > 0 and $i == $truth_col-1) or ($truth_col == -1 and $i == scalar(@line) - 1) ) {
+                    $truth = $line[$i];
+                } else {
+                    push @attributes, $line[$i];
+                }
+            }
+        }
+        
+        return($line_num, $truth, @attributes);
+    }
+}
+
+sub print_metadata {
+    my $truth = shift();
+    my $class_label = shift();
+    my @class = @{shift()};
+    my @labels = @{shift()};
+    my @types = @{shift()};
+    my @num_values = @{shift()};
+    my @str_values = @{shift()};
+    
+    # Account for the default of truth in last column
+    $truth = scalar(@types)+1 if $truth < 0;
+    
+    printf("METADATA SUMMARY:\n\n");
+    printf("Found %d classes in column %d with label '%s': %s\n\n",
+                                            scalar @class, $truth, $class_label, join(", ", sort_num_or_lex(@class)));
+    printf("Found %d attributes\n", scalar @types);
+    my $fmt = num_digits(scalar(@types) + 1); # The +1 accounts for the truth column
+    for (my $i = 0; $i < scalar @types; $i++) {
+        printf("  att %${fmt}d: type   = %s\n", $i+1+($i+1>=$truth?1:0), $types[$i]);
+        if ($labels[$i]) {
+            printf("          label  = '%s'\n", $labels[$i]);
+        }
+        if (defined $num_values[$i] or defined $str_values[$i]) {
+            printf("          values = ");
+            if (defined $num_values[$i]) {
+                printf("%s", join(", ", sort_num(@{$num_values[$i]})));
+            }
+            if (defined $num_values[$i] and defined $str_values[$i]) {
+                printf(", ");
+            }
+            if (defined $str_values[$i]) {
+                print "'";
+                printf("%s", join("', '", sort_lex(@{$str_values[$i]})));
+                print "'";
+            }
+            printf("\n");
+        }
+    }
+}
+
+sub write_names_file {
+    my $file = shift();
+    my $truth = shift();
+    my $class_label = shift();
+    my @class = @{shift()};
+    my @labels = @{shift()};
+    my @types = @{shift()};
+    my @num_values = @{shift()};
+    my @str_values = @{shift()};
+    
+    # Account for the default of truth in last column
+    $truth = scalar(@types)+1 if $truth < 0;
+    
+    # Set up format strings for pretty-printing this stuff
+    my $fmt = num_digits(scalar(@types) + 1); # The +1 accounts for the truth column
+    my $max = 0;
+    for (my $i = 0; $i < scalar @types; $i++) {
+        $max = length $labels[$i] if (defined $labels[$i] and length $labels[$i] > $max);
+    }
+    $max = length $class_label if (defined $class_label and length $class_label > $max);
+    
+    open NFH, ">$file" or die "Could not write names-file: '$file'\n";
+    
+    print NFH "# Generated by data_inspector.pl\n\n";
+    for (my $i = 0; $i < scalar @types; $i++) {
+        if ($i+1 == $truth) {
+            # Insert the class line
+            if (defined $labels[$i>0?$i-1:$i+1]) {
+                printf NFH "%${fmt}d %-${max}s ", $i+1, $class_label;
+            }
+            print NFH ": class ";
+            print NFH join(",", sort_num_or_lex(@class));
+            print NFH "\n";
+        }
+        # Print an attribute line
+        if (defined $labels[$i]) {
+            printf NFH "%${fmt}d %-${max}s ", $i+1+($i+1>=$truth?1:0), $labels[$i];
+        }
+        if ($types[$i] eq 'mixed') {
+            print NFH ": continuous ";
+        } else {
+            print NFH ": ", $types[$i], " ";
+        }
+        if ($types[$i] eq 'discrete') {
+            print NFH join(",", sort_num(@{$num_values[$i]}), sort_lex(@{$str_values[$i]}));
+        }
+        
+        print NFH "\n";
+    }
+    # If truth is in the last column, it wasn't written in the above loop so write it now
+    if ($truth == scalar(@types) + 1) {
+            # Insert the class line
+            if (defined $labels[$truth-2]) {
+                printf NFH "%${fmt}d %-${max}s ", $truth, $class_label;
+            }
+            print NFH ": class ";
+            print NFH join(",", sort_num_or_lex(@class));
+            print NFH "\n";
+    }
+    
+    close NFH;
+}
+
+sub read_names_file {
+    my $file = shift();
+    my $class_label = "";
+    my @classes = ();
+    my @labels = ();
+    my @types = ();
+    my @values = ();
+    
+    open NFH, $file or die "Could not read names-file: '$file'\n";
+    
+    my $line_num = 0;
+    while (<NFH>) {
+        my $line = $_;
+        $line_num++;
+        $line =~ s/^\s+//;
+        $line =~ s/\s+$//;
+        $line =~ s/#.*$//;
+        next if $line eq "";
+
+        # This is an attribute or class def
+        my ($temp_a, $temp_b) = split /\s*:\s*/, $line;
+        if ($temp_b =~ /^class/) {
+            # class
+            $class_label = $temp_a;
+            my ($temp_c, $temp_d) = split /\s+/, $temp_b, 2;
+            if (defined $temp_d) {
+                @classes = split /,/, $temp_d;
+                foreach (@classes) {
+                    s/^\s+//;
+                    s/\s+$//;
+                }
+            } else {
+                $err_msg_missing_class_def .= sprintf("Class def line has no list of classes\n", $line_num);
+            }
+        } else {
+            # discrete or continuous or exclude attribute
+            push @labels, $temp_a;
+            my ($temp_c, $temp_d) = split /\s+/, $temp_b, 2;
+            push @types, $temp_c;
+            if (defined $temp_d) {
+                my @temp_e = split /\s*,\s*/, $temp_d;
+                push @values, \@temp_e;
+            } else {
+                push @values, undef;
+            }
+        }
+    }
+    close $file;
+    
+    return($class_label, \@classes, \@labels, \@types, \@values);
+}
+
+sub num_digits {
+    return 1 if $_[0] == 0;
+    return (int(log(-$_[0])/log(10.0)) + 2) if $_[0] < 0;
+    return (int(log($_[0])/log(10.0)) + 1);
+}
+
+sub print_usage {
+    print("`data_inspector' can be used in two ways. If both the .data and .names files\n");
+    print("are given, it will scan the .data file for errors. It can also be used to\n");
+    print("generate a best-guess .names file based on the information in the .data file\n\n\n");
+    print("Usage: data_inspector.pl (--file-stem BASENAME | --data-file FILENAME) [OPTIONS]\n");
+    print("\n");
+    print("    -d, --data-file=FILENAME      The avatar format data file\n");
+    print("    -f, --file-stem=BASENAME      The basename for the data and names file\n");
+    print("                                  The data file uses an extension of .data\n");
+    print("                                  and the names file uses an extension of .names\n");
+    print("\n");
+    print("Check an existing .names file:\n");
+    print("    -n, --names-file=FILENAME     The avatar format names file\n");
+    print("\n");
+    print("Generate a best-guess .names file:\n");
+    print("    -w, --write-names-file        Write the names file\n");
+    print("                                  Filename is the basename of the .data file\n");
+    print("                                  with the extension '.names'\n");
+    print("    -t, --discrete-threshold=INT  Use INT as the cutoff for discrete attributes.\n");
+    print("                                  Attributes with fewer than INT distinct values\n");
+    print("                                  will be considered discrete.\n");
+    print("                                  Default = 10\n");
+    print("\n");
+    print("General options:\n");
+    print("    -c, --truth-column=INT        Specifies the 1-based column in the .data file\n");
+    print("                                  which contains the class value. If not given\n");
+    print("                                  the last column will be used.\n");
+    print("    -x, --exclude=LIST            Comma separated list of attributes to exclude.\n");
+    print("    -p, --print-metadata          Print a summary of the .names file.\n");
+    print("                                  This is on by default.\n");
+    print("    --nop, --noprint-metadata     Turn off the printing of the summary\n");
+}

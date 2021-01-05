@@ -1,0 +1,87 @@
+## $Source: /home/Repositories/avatar/avatar-copy/tools/Makefile,v $
+## $Revision: 1.7 $
+## $Date: 2006/07/13 04:43:09 $
+## 
+## Makefile for tools
+##
+include ../Makefile.include
+
+##
+## Files (in alphabetical order)
+##
+
+TOOL_HFILES =
+
+TOOL_SRCS = \
+	ccr2exo.c \
+	compare_regions.c \
+	connect_comp_regions.c \
+	dup_nodes.c \
+	gen_overlap_matrix.c \
+	query_regions.c \
+
+ 
+# all files for release target
+ALL_FILES = Makefile $(TOOL_HFILES) $(TOOL_SRCS)
+
+# files for this build
+TOOL_OBJS = $(TOOL_SRCS:.c=.o)
+TOOL_EXES = $(TOOL_SRCS:.c=)
+##LDFLAGS += -lMallocDebug
+
+##
+## Targets
+##
+
+first : tools
+
+tools : $(TOOL_EXES)
+
+# tools are dependent on the fc library
+# this will update the local excutables if the library is new,
+# but will not automatically update the library if it needs it
+$(TOOL_EXES) : ../$(DDLIB_PATH)/$(DDLIB)
+
+clean : 
+	$(RM) $(TOOL_EXES)
+
+# gen_overlap_matrix is fclib agnostic
+gen_overlap_matrix : gen_overlap_matrix.c
+	$(CC) -o $@ $(CFLAGS) -I../${DDLIB_PATH} -I. $@.c \
+                -L../$(DDLIB_PATH) $(LDFLAGS) $(DDLDLIB) -lm
+
+# generic compiling directive for executables
+% : %.c
+	$(CC) -o $@ $(CFLAGS) -I../${DDLIB_PATH} $(CPPFLAGS) $@.c \
+                -L../$(DDLIB_PATH) $(LDFLAGS) $(FCLDLIB) $(DDLDLIB) $(LDLIBS)
+
+# generic compiling directive for wrappers
+% : %.in
+	rm -f $@
+	sed -e "s@CORE_PATH=\.@CORE_PATH=`pwd`@g" $@.in > $@
+	chmod +x $@
+
+install : $(TOOL_EXES) 
+	cp -f $(TOOL_EXES) $(TOOL_SCRIPTS) $(INSTALL_DIR)/bin
+	-for i in $(TOOL_WRAPPERS); do \
+	  rm -f $(INSTALL_DIR)/bin/$$i; \
+	  sed -e "s@CORE_PATH=\.@CORE_PATH=$(INSTALL_DIR)/bin@g" $$i.in > \
+	               $(INSTALL_DIR)/bin/$$i; \
+	  chmod +x $(INSTALL_DIR)/bin/$$i; \
+	done
+	-for i in $(TOOL_EXES) $(TOOL_SCRIPTS) $(TOOL_WRAPPERS); do \
+	   chmod go=rx $(INSTALL_DIR)/bin/$$i; \
+	done
+
+uninstall : 
+	-for i in $(TOOL_EXES) $(TOOL_SCRIPTS) $(TOOL_WRAPPERS); do \
+	   rm -f $(INSTALL_DIR)/bin/$$i; \
+	done
+
+release :
+	-for i in $(ALL_FILES); do \
+	  (cd ..; tar --append --file=$(FC_RELEASE).tar \
+	    $(FC_RELEASE)/tools/$$i) \
+	done
+
+#.PHONY : clean install uninstall release

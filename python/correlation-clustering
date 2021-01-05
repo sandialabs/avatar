@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+
+import argparse
+import csv
+import matplotlib.pyplot as pyplot
+import numpy
+import scipy.cluster.hierarchy
+import scipy.spatial.distance
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-K", "--cluster-count", type=int, default=10, help="""Number of flat clusters to compute.  Default: %(default)s""")
+parser.add_argument("--input", default="-", help="""Input data file.  Use "-" for stdin.""")
+parser.add_argument("--linkage", default="average", choices=["single", "average", "complete", "weighted"], help="Set the linkage method.  Default: %(default)s")
+parser.add_argument("--write", default=None, help="Write the figure to a file instead of displaying the interactive version.  The file format is determined by the choice of extension.")
+arguments = parser.parse_args()
+
+input = sys.stdin if arguments.input == "-" else open(arguments.input, "r")
+
+# Load a correlation matrix stored in a CSV file, and extract the names of the
+# features which are stored in duplicate in the 1st row and 1st column.
+rows = [row for row in csv.reader(input)]
+features = numpy.array(rows[0][1:-1])
+correlations = numpy.array([row[1:] for row in rows[1:]], dtype="float64")
+
+# Convert the correlation matrix into a form usable with
+# scipy.cluster.hierarchy.linkage().  Correlation is a type of similarity
+# metric, so we need to "invert" its meaning to produce distances.
+distance = numpy.copy(correlations)
+distance[numpy.isnan(distance)] = 0
+distance = numpy.abs(distance)
+distance = 1 - distance
+distance[numpy.diag_indices_from(distance)] = 0
+distance = scipy.spatial.distance.squareform(distance)
+
+# Compute the hierarchy.
+linkage = scipy.cluster.hierarchy.linkage(distance, method=arguments.linkage)
+
+# Compute a threshold distance $t$ that divides the hierarchy into $K$ clusters.
+t = linkage[-arguments.cluster_count : -(arguments.cluster_count - 2), 2].mean()
+
+# Print some flat clusters.
+clusters = scipy.cluster.hierarchy.fcluster(linkage, arguments.cluster_count, criterion="maxclust")
+for cluster in numpy.unique(clusters):
+  print(cluster, features[numpy.flatnonzero(clusters == cluster)])
+
+# Plot the hierarchy.
+fig, axes = pyplot.subplots(figsize=(15,12))
+scipy.cluster.hierarchy.dendrogram(linkage, labels=features, orientation="left", ax=axes, color_threshold = t);
+axes.axvline(t, color="black", linestyle="--")
+
+if arguments.write is not None:
+  pyplot.savefig(arguments.write)
+else:
+  pyplot.show()
+

@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+/**
+ *  General data types that are used in all modules.
+ */
+
+#ifndef __DATATYPES__
+#define __DATATYPES__
+
+typedef enum {
+    FALSE = 0,
+    TRUE = 1
+} Boolean;
+
+typedef unsigned int uint;
+
+#define INTMAX  1000000000
+#define INTMIN -1000000000
+
+#endif // __DATATYPES__

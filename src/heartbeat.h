@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,40 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+
+
+#ifndef __HEARTBEAT__
+#define __HEARTBEAT__
+
+/*
+ * Initialize counter display.
+ *
+ * Pre: num_counters > 0
+ * Post: prints "Building Trees:  0 [ 0 0 ...]" to stdout.
+ */
+void begin_progress_counters(int num_counters);
+
+/*
+ * Update the displayed tree counters.  Multiple counters can be shown
+ * to display the progress of parallel ensemble learning (e.g., using
+ * MPI).
+ *
+ * Pre: counters != NULL
+ * Pre: num_counters > 0 and is the number of counter values stored in
+ *      counters.
+ * Pre: begin_progress_counters() was called before this
+ * Post: The displayed counter values show contents of counters argument.
+ */
+void update_progress_counters(int num_counters, const int* counters);
+
+/*
+ * Clean up counter display.
+ *
+ * Pre: begin_progress_counters() called without a matching
+ *      end_progress_counters() call.
+ * Post: prints end of line to stdout
+ */
+void end_progress_counters(void);
+
+#endif //__HEARTBEAT__

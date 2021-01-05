@@ -1,0 +1,37 @@
+ADDED FEATURES:
+
+The installation process is now
+./configure && make && make install
+
+Added the --verbose-oob option to avatardt. This generates a new file
+(default is basename.oob-data) containing the OOB error as each new
+tree is added to the ensemble. Requires that either bagging or ivoting
+be turned on.
+
+Added the --version option which does what you may expect.
+
+You can now specify alternate filenames for input/output instead of
+being forced to use the same basename for all. See the --train-data
+option and others like it in the usage message or manpage.
+
+The overall voted accuracy is printed when running crossvalfc even
+when the confusion matrix is not requested.
+
+BUG FIXES:
+
+Fixed an --include bug that manifests when truth is column 1 and you
+want to include above column 2.
+
+Fixed a crash when reading some trees due to memory problems.
+
+Fixed a problem with empty files specified as training/testing data.
+The code now alerts you to this fact and quits instead of crashing.
+
+Fixed a bug that didn't like some comment lines in the training/
+testing data.
+
+OTHER:
+
+The version is now integrated with the latest FCLib release (1.6.1)
+which has had all SAF references removed. It is also integrated with
+the latest ExodusII open source release (4.61).

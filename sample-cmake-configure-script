@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# This is a sample CMake script for configuring Avatar.
+# YOU MUST EDIT THIS SCRIPT BEFORE RUNNING IT.
+#
+# Run this script in a separate, new build directory.
+# The build directory must NOT be a subdirectory of Avatar's source directory.
+
+# It's good practice to clear CMake's cache before rerunning CMake.
+rm -f CMakeCache.txt
+
+# CHANGE THIS to the path to your CMake executable, if you installed
+# CMake somewhere not in your PATH.  If CMake is in your PATH, just
+# make this cmake.
+CMAKE_EXECUTABLE=${HOME}/pkg/cmake-3.11.0-rc1/bin/cmake
+
+# CHANGE THIS to Avatar's source directory.
+AVATAR_SOURCE=${HOME}/src/avatar
+
+# CHANGE THIS to where you want to install Avatar.
+# Do NOT install in the source directory or any subdirectory of it.
+AVATAR_INSTALL_PREFIX=${HOME}/pkg/avatar
+
+# CHANGE THIS to the include directory in your GSL (GNU Scientific
+# Library) 1.16 installation.
+GSL_INCLUDE_DIR=${HOME}/pkg/gsl-1.16/include
+# CHANGE THIS to the path to your GSL (GNU Scientific Library) 1.16
+# static library.
+GSL_LIBRARY=${HOME}/pkg/gsl-1.16/lib/libgsl.a
+
+# If you want to build unit tests, follow the instructions in
+# INSTALL.md.  This will require setting CHECK_INSTALL_DIR to where
+# you installed the Check library.  For example, add the following
+# line after the ${CMAKE_EXECUTABLE} line, but before
+# ${AVATAR_SOURCE}.  BE SURE TO ADD a backslash immediately after the
+# line (I can't put a trailing backslash in a shell script comment).
+#
+# -D CHECK_INSTALL_DIR:FILEPATH="${HOME}/pkg/check"
+
+${CMAKE_EXECUTABLE} \
+  -D CMAKE_BUILD_TYPE:STRING=RELEASE \
+  -D CMAKE_INSTALL_PREFIX:PATH="${AVATAR_INSTALL_PREFIX}" \
+  -D GSL_INCLUDE_DIR:PATH="${GSL_INCLUDE_DIR}" \
+  -D GSL_LIBRARY:FILEPATH="${GSL_LIBRARY}" \
+${AVATAR_SOURCE}
+
+
+
+
+
+
+

@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#ifndef __MEMORY__
+#define __MEMORY__
+
+void clear_CV_Metadata(CV_Metadata* meta, Data_Format format, Boolean read_folds);
+void free_CV_Metadata_Aliasing(CV_Metadata* meta, CV_Metadata* aliased, Data_Format format, Boolean read_folds);
+void free_DT_Ensemble(DT_Ensemble ensemble, CV_Mode mode);
+void free_DT_Node(DT_Node *trees, int num_nodes);
+void free_Vote_Cache(Vote_Cache cache, Args_Opts args);
+void free_CV_Class(CV_Class class);
+void free_CV_Dataset(CV_Dataset data, Args_Opts args);
+void free_CV_Subset(CV_Subset* sub, Args_Opts args, CV_Mode mode);
+void free_CV_Subset_inter(CV_Subset* sub, Args_Opts args, CV_Mode mode);
+
+#endif // __MEMORY__

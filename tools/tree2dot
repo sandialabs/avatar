@@ -1,0 +1,492 @@
+#!/usr/bin/env perl
+#######################################################################333
+#Avatar Tools 
+#Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+#All rights reserved. 
+#
+#Redistribution and use in source and binary forms, with or without
+#modification, are permitted provided that the following conditions are met:
+#
+#1. Redistributions of source code must retain the above copyright
+#  notice, this list of conditions and the following disclaimer.
+#
+#2. Redistributions in binary form must reproduce the above copyright
+#  notice, this list of conditions and the following disclaimer  in the
+#  documentation and/or other materials provided with the distribution.
+#
+#3. Neither the name of the copyright holder nor the names of its
+#  contributors may be used to endorse or promote products derived from
+#  this software without specific prior written permission.
+#
+#THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+#For questions, comments or contributions contact 
+#Philip Kegelmeyer, wpk@sandia.gov 
+#######################################################################
+
+use strict;
+use Getopt::Long;
+
+BEGIN {
+    if ($ARGV[0] =~ /\.gz$/) {
+        unless (eval "require Compress::Zlib") {
+            die "Perl module Compress::Zlib needed but not available\n\nError message: $@\n";
+        }
+    }
+}
+
+$|++;
+
+my %opts;
+GetOptions(
+            "help"     => \$opts{h},
+            "quiet"    => \$opts{q},
+            "digits=i" => \$opts{d},
+            "verbose"  => \$opts{v},
+          );
+
+my $treeFile = shift();
+my $dotFilestem = shift();
+setSigfig($opts{d});
+
+expandedUsage() if $opts{h};
+unless( defined $treeFile and -r $treeFile ) {
+    shortUsage();
+    exit(0);
+}
+if (not defined $dotFilestem or not $dotFilestem) {
+    $dotFilestem = $treeFile;
+    $dotFilestem =~ s/\.gz$//;
+}
+
+my $numberOfTrees = 0;
+my $currentTree = undef;
+my @nodes = ();
+my $currentNode = undef;
+my $parentNode = undef;  # For OpenDT only
+my $lastNodeWasLeaf = 0; # For OpenDT only
+my $treeType = undef;
+
+# Open the tree file
+my $gz = AT_open($treeFile, "r");
+if (not defined $gz) {
+    die "Could not read $treeFile\n";
+}
+
+# Parse the tree file storing all data in hashes in the @nodes array
+my $line;
+while (AT_readline($gz, $line) > 0) {
+    #printf("READ '$line'\n");
+    if ($line =~ /^number_of_trees=(\d+)/) {  # USF
+        $treeType = 'USF';
+        $numberOfTrees = $1;
+        print "Found $numberOfTrees trees\n" if not $opts{q};
+    } elsif ($line =~ /^NumTrees\s*(\d+)/) { # OpenDT
+        $treeType = 'OpenDT';
+        $numberOfTrees = $1;
+        print "Found $numberOfTrees trees\n" if not $opts{q};
+    } elsif ($line =~ /^#BEGIN_TREE/) { # USF
+        $gz->gzreadline($line);
+        if ($line =~ /^TreeID=(\d+)/) {
+            $currentTree = $1;
+        }
+    } elsif ($line =~ /^Tree\s*(\d+)/) { # OpenDT
+        if (defined $currentTree) {
+            # OpenDT starts counting trees at 1. 
+            print "Writing .dot files " if (not $opts{q} and $currentTree == 1);
+            print "." if not $opts{q};
+            writeDot($dotFilestem, $currentTree, \@nodes);
+            
+            # Re-initialize
+            @nodes = ();
+            $parentNode = undef;
+            $lastNodeWasLeaf = 0;
+        }
+
+        $currentTree = $1;
+        $currentNode = 0;
+    } elsif ($line =~ /^#BEGIN_NODE/) { # USF
+        AT_readline($gz, $line);
+        if ($line =~ /^NodeID=(\d+)/) {
+            $currentNode = $1;
+            $nodes[$currentNode] = {};
+
+            AT_readline($gz, $line);
+            while ($line !~ /^#END_NODE/) {
+                if ($line =~ /^BranchID\[(\d+)\]=(\d+)/) {
+                    $nodes[$currentNode]->{"BranchID$1"} = $2;
+                } elsif ($line =~ /^Branch\[(\d+)\]=(.+)/) {
+                    $nodes[$currentNode]->{"Branch$1"} = $2;
+                } elsif ($line =~ /^Frequency\[(\d+)\]=(.+)/) {
+                    $nodes[$currentNode]->{"Frequency$1"} = $2;
+                } elsif ($line =~ /^([\w]+)=(.+)/) {
+                    $nodes[$currentNode]->{$1} = $2;
+                }
+                AT_readline($gz, $line);
+            }
+            
+        } else {
+            die "Error parsing tree. Expected 'NodeID=' but got $line";
+        }
+    } elsif ($line =~ /^SPLIT\s/) { # OpenDT
+        
+        # If the last node seen was a leaf node, then the current node is a node we've seen before
+        if ($lastNodeWasLeaf) {
+            
+            # Refind it and update
+            foreach my $thisNode ( reverse ( 0 .. $currentNode - 1 ) ) {
+                # This first node up from the current node with not all its branches is the one we want
+                if ( defined $nodes[$thisNode]->{BranchCount} and
+                     $nodes[$thisNode]->{BranchCount} < $nodes[$thisNode]->{Branches} ) {
+                    my $testNode = openDTLineToNode(-1, $line);
+                    # Confirm that this is the same node we currently have
+                    my @diffs = ();
+                    unless ( isEqual( $testNode, $nodes[$thisNode], \@diffs ) ) {
+                        print "Nodes $thisNode and ", $currentNode + 1, " should be the same but aren't:\n";
+                        print "Diffs are in keys: @diffs\n";
+                        print nodeToString($nodes[$thisNode]), "\n";
+                        print nodeToString($testNode), "\n";
+                        die "\nError parsing tree.\n";
+                    }
+                    $nodes[$thisNode] = updateNode4OpenDT($nodes[$thisNode], $line);
+                    print "Updated node $thisNode (a):\n", nodeToString($nodes[$thisNode]), "\n\n" if $opts{v};
+                    # This is the new parent
+                    $parentNode = $thisNode;
+                    
+                    last;
+                }
+            }
+        
+        # Else this is a new node
+        } else {
+            
+            # Set current node info
+            $nodes[$currentNode] = openDTLineToNode($currentNode, $line);
+            print "Just created node $currentNode\n" if $opts{v};
+            print "Set new node $currentNode:\n", nodeToString($nodes[$currentNode]), "\n\n" if $opts{v};
+        
+            # If there is a parent node, set its info now that we have the child
+            if ( defined $parentNode ) {
+                if (not exists $nodes[$parentNode]->{Branches}) {
+                    die "\nNode $parentNode is the parent to node $currentNode but has not been seen yet.\n";
+                }
+                $nodes[$parentNode]->{"BranchID".$nodes[$parentNode]->{BranchCount}} = $currentNode;
+                print "Updated node $parentNode (b):\n", nodeToString($nodes[$parentNode]), "\n\n" if $opts{v};
+            }
+            $parentNode = $currentNode;
+            $currentNode++;
+        }
+        
+        $lastNodeWasLeaf = 0;
+        
+    } elsif ($line =~ /^LEAF\s/) { # OpenDT
+        $nodes[$currentNode] = openDTLineToNode($currentNode, $line);
+        # If there is a parent node, set its info now that we have the child
+        if ( defined $parentNode ) {
+            $nodes[$parentNode]->{"BranchID".$nodes[$parentNode]->{BranchCount}} = $currentNode;
+            print "Updated node $parentNode (c):\n", nodeToString($nodes[$parentNode]), "\n\n" if $opts{v};
+        }
+        $currentNode++;
+        $lastNodeWasLeaf = 1;
+    } elsif ($line =~ /^#END_TREE/) { # USF
+        print "Writing .dot files " if (not $opts{q} and $currentTree == 0);
+        print "." if not $opts{q};
+        writeDot($dotFilestem, $currentTree, \@nodes);
+        @nodes = ();
+    }
+}
+
+# Need to print the last OpenDT tree
+if ($treeType eq 'OpenDT') {
+    print "." if not $opts{q};
+    writeDot($dotFilestem, $currentTree, \@nodes);
+}
+
+print "\n" if not $opts{q};
+AT_close($gz);
+
+# Check that we printed the correct number of trees
+my $treeCount = $treeType eq 'OpenDT' ? $currentTree : $currentTree + 1;
+unless ($treeCount == $numberOfTrees) {
+    printf STDERR "Expected %d trees but found %d\n", $numberOfTrees, $treeCount;
+}
+
+exit(0);
+
+#
+# Pretty-prints a node
+#
+sub nodeToString {
+    my $node = shift;
+    my $s = '';
+    foreach (sort keys %{$node}) {
+        $s .= "$_ => " . ( defined $node->{$_} ? $node->{$_} : 'undef' ) . "\n";
+    }
+    return $s;
+}
+
+#
+# Creates a node from a 'SPLIT' or 'LEAF' line in an OpenDT tree file
+#
+# Input:  node number (unused), line from OpenDT tree file
+# Output: returns the new node
+#
+sub openDTLineToNode {
+    my $nodeNumber = shift();
+    my $line = shift();
+    my $node = {};
+    my @tokens = split /\s+/, $line;
+
+    if ($tokens[1] eq 'CONTINUOUS') {
+        $node->{node_type} = ucfirst(lc($tokens[1]));
+        $node->{SplitAttribute} = $tokens[3];
+        $node->{BranchCount} = 1;
+        $node->{Branches} = 2;
+        $node->{Branch1} = $tokens[4];
+        $node->{BranchID1} = undef;
+        $node->{Cut} = $tokens[5];
+    } elsif ($tokens[1] eq 'DISCRETE') {
+        $node->{node_type} = ucfirst(lc($tokens[1]));
+        $node->{SplitAttribute} = $tokens[3];
+        $node->{BranchCount} = 1;
+        $node->{Branches} = $tokens[7];
+        $node->{Branch1} = "=$tokens[5]";
+        $node->{BranchID1} = undef;
+    } elsif ($tokens[0] eq 'LEAF') {
+        $node->{node_type} = ucfirst(lc($tokens[0]));
+        $node->{Class} = $tokens[2];
+    }
+    
+    return $node;
+}
+
+#
+# Updates a node.
+# For CONTINUOUS nodes:
+#   To be used the second time a node is seen in an OpenDT tree.
+#   Effect is to set Branch2 to the splt operator and set BranchID2 to undef.
+# For DISCRETE nodes:
+#   To be used the Nth (N > 1) time a node is seen in an OpenDT tree.
+#   Effect is to set BranchCount++, BranchN to '=', and BranchIDN to undef
+#
+# Input:  node to update, line from OpenDT tree file
+# Output: returns the updated node
+#
+sub updateNode4OpenDT {
+    my $node = shift();
+    my $line = shift();
+    my @tokens = split /\s+/, $line;
+    
+    if ($tokens[1] eq 'CONTINUOUS') {
+        $node->{BranchCount}++;
+        $node->{Branch2} = $tokens[4];
+        $node->{BranchID2} = undef;
+    } elsif ($tokens[1] eq 'DISCRETE') {
+        my $N = $tokens[5];
+        $node->{BranchCount}++;
+        $node->{"Branch$N"} = "=$tokens[5]";
+        $node->{"BranchID$N"} = undef;
+    }
+    
+    return $node;
+}
+
+#
+# Compares two nodes by comparing each hash element.
+# Ignores the Branch[12] and BranchID[12] elements for now.
+# Ignores the BranchCount and Cut elements for Discrete nodes
+#
+# Input:  node1, node2
+# Output: list of keys which are different
+#
+sub isEqual {
+    my $node1 = shift();
+    my $node2 = shift();
+    my $diffs = shift();
+    
+    foreach my $key ( keys %{$node1} ) {
+        if ($key =~ /Branch[12I]/) {
+        } elsif ($node1->{node_type} eq 'Discrete' and ( $key eq 'Cut' or $key eq 'BranchCount' ) ) {
+        } else {
+            push(@{$diffs}, $key) unless ( exists $node2->{$key} and $node1->{$key} eq $node2->{$key} );
+        }
+    }
+    
+    return @{$diffs} > 0 ? 0 : 1;
+}
+
+#
+# Writes a .dot file from a list of nodes
+#
+# Input:  filestem, tree number, reference to list of nodes
+# Output: none
+#
+sub writeDot {
+    my $fs = shift;
+    my $t = shift;
+    my @n = @{shift()};
+
+    die "Can not write $fs-$t.dot\n" unless( open(DOT, ">$fs-$t.dot") );
+    print DOT "digraph $currentTree {\n    node [shape=ellipse]\n";
+    
+    foreach my $i (0 .. $#n) {
+        next if not $n[$i];
+        if ($n[$i]->{node_type} eq 'Continuous') {
+            foreach my $j (1 .. $n[$i]->{Branches}) {
+                my $bn = $n[$i]->{"BranchID$j"};
+                my $cut = sigfig($n[$i]->{Cut});
+                die "Node $i points to non-existent branch node $bn\n" if not $n[$bn];
+                if ($n[$bn]->{node_type} eq 'Continuous') {
+                    my $bcut = sigfig($n[$bn]->{Cut});
+                    print DOT "    node [shape=ellipse]\n";
+                    print DOT "    \"($i) $n[$i]->{SplitAttribute} Cut=$cut\" -> " .
+                              "\"($bn) $n[$bn]->{SplitAttribute} Cut=$bcut\" " .
+                              '[label="' . $n[$i]->{"Branch$j"} . "\"]\n";
+                } elsif ($n[$bn]->{node_type} eq 'Discrete') {
+                    print DOT "    node [shape=ellipse]\n";
+                    print DOT "    \"($i) $n[$i]->{SplitAttribute} Cut=$cut\" -> " .
+                              "\"($bn) $n[$bn]->{SplitAttribute}\" " .
+                              '[label="' . $n[$i]->{"Branch$j"} . "\"]\n";
+                } elsif ($n[$bn]->{node_type} eq 'Leaf') {
+                    print DOT "    node [shape=box]\n";
+                    print DOT "    \"($i) $n[$i]->{SplitAttribute} Cut=$cut\" -> " .
+                              "\"($bn) Class=$n[$bn]->{Class} ";
+                    if (exists $n[$bn]->{Items}) {
+                        my $items = int($n[$bn]->{Items}); 
+                        print DOT "Items=$items\" ";
+                    } else {
+                        print DOT "\" ";
+                    }
+                    print DOT '[label="' . $n[$i]->{"Branch$j"} . "\"]\n";
+                }
+            }
+        }
+        if ($n[$i]->{node_type} eq 'Discrete') {
+            foreach my $j (1 .. $n[$i]->{Branches}) {
+                my $bn = $n[$i]->{"BranchID$j"};
+                die "Node $i points to non-existent branch node $bn\n" if not $n[$bn];
+                if ($n[$bn]->{node_type} eq 'Continuous') {
+                    my $bcut = sigfig($n[$bn]->{Cut});
+                    print DOT "    node [shape=ellipse]\n";
+                    print DOT "    \"($i) $n[$i]->{SplitAttribute}\" -> " .
+                              "\"($bn) $n[$bn]->{SplitAttribute} Cut=$bcut\" " .
+                              '[label="=' . $n[$i]->{"Branch$j"} . "\"]\n";
+                } elsif ($n[$bn]->{node_type} eq 'Discrete') {
+                    print DOT "    node [shape=ellipse]\n";
+                    print DOT "    \"($i) $n[$i]->{SplitAttribute}\" -> " .
+                              "\"($bn) $n[$bn]->{SplitAttribute}\" " .
+                              '[label="=' . $n[$i]->{"Branch$j"} . "\"]\n";
+                } elsif ($n[$bn]->{node_type} eq 'Leaf') {
+                    print DOT "    node [shape=box]\n";
+                    print DOT "    \"($i) $n[$i]->{SplitAttribute}\" -> " .
+                              "\"($bn) Class=$n[$bn]->{Class} ";
+                    if (exists $n[$bn]->{Items}) {
+                        my $items = int($n[$bn]->{Items}); 
+                        print DOT "Items=$items\" ";
+                    } else {
+                        print DOT "\" ";
+                    }
+                    print DOT '[label="=' . $n[$i]->{"Branch$j"} . "\"]\n";
+                }
+            }
+        }
+    }
+
+    print DOT "}\n";
+    close DOT;
+
+    return;
+}
+
+my $use_CZ = 0;
+sub AT_open {
+    my $file = shift();
+    my $mode = shift();
+    
+    if ($file =~ /\.gz$/) {
+        $use_CZ = 1;
+        return Compress::Zlib::gzopen($file, $mode);
+    } else {
+        my $fh;
+        if (open($fh, $file)) {
+            return $fh;
+        }
+        return undef;
+    }
+}
+
+sub AT_readline {
+    my $fh = $_[0];
+    if ($use_CZ) {
+        return $fh->gzreadline($_[1]);
+    } else {
+        $_[1] = <$fh>;
+        return length($_[1]);
+    }
+    return -1;
+}
+
+sub AT_close {
+    if ($use_CZ) {
+        $_[0]->gzclose();
+    } else {
+        close($_[0]);
+    }
+}
+
+sub shortUsage {
+    print <<USAGE;
+
+tree2dot.pl [OPTIONS] input_tree_file [output_dot_filestem]
+
+USAGE
+}
+
+sub expandedUsage {
+    shortUsage();
+    
+    print <<USAGE;
+OPTIONS: -h   : Display this message
+         -q   : Quiet mode
+         -d N : Use N signifiant digits for real numbers (default = 6)
+         
+input_tree_file:     Specify the gzipped (.gz) or uncompressed file containing the tree(s).
+                     This file can be either a USF tree file or an OpenDT tree file.
+
+output_dot_filestem: Base filename for dot files. '-M.dot' is appended to the base where M
+                     is the TreeID. If unspecified, input_tree_file (minus the .gz, if
+                     applicable) is used.
+                     
+USAGE
+
+    exit(0);
+}
+
+{
+    my $sigfig;
+    
+    sub setSigfig {
+        $sigfig = shift() || 6;
+        return $sigfig;
+    }
+    
+    sub getSigfig {
+        return $sigfig;
+    }
+    
+    sub sigfig {
+        my $num = shift;
+        return( int(sprintf("%f", sprintf("%.".($sigfig-1)."e", $num)) * 10**$sigfig) / 10**$sigfig );
+    }
+}
+

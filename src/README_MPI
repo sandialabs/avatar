@@ -1,0 +1,3 @@
+To install the MPI version, type:
+
+%> make install USE_MPI=yes

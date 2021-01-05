@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#ifndef __IVOTE__
+#define __IVOTE__
+
+typedef struct tree_bookkeeping_struct Tree_Bookkeeping;
+typedef struct crossval_dataset_struct CV_Dataset;
+typedef struct crossval_sub_dataset_struct CV_Subset;
+typedef struct av_sorted_blob_array AV_SortedBlobArray;
+typedef struct voting_cache_struct Vote_Cache;
+typedef struct dt_node_struct DT_Node;
+typedef struct args_and_opts_struct Args_Opts;
+
+void make_bite(CV_Subset *src, CV_Subset *bite, Vote_Cache *cache, Args_Opts args);
+double compute_oob_error_rate(DT_Node *tree, CV_Subset train_data, Vote_Cache *cache, Args_Opts args);
+double compute_test_error_rate(DT_Node *tree, CV_Subset test_data, Vote_Cache *cache, Args_Opts args);
+void initialize_cache(Vote_Cache *lcache, int n_cl, int n_train_ex, int n_test_ex, int free_first);
+
+#endif

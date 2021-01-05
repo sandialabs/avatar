@@ -1,0 +1,135 @@
+\"
+\"
+\"
+\"
+\"
+\"
+\"
+.Dd 07 July 2007
+.Os
+.Dt AVATARDT 1
+.Sh NAME
+.Nm avatardt
+.Nd "train and test decision trees"
+.Sh SYNOPSIS
+.Nm
+--format=NAME
+--train
+--test
+format-specific-arguments
+.Op tree-options
+.Op ensemble-options
+.Op output-options
+.Sh DESCRIPTION
+.Nm
+operates on exodus\- or avatar\-format data to train and test decision trees.
+.Sh ARGUMENTS AND OPTIONS
+.Ss REQUIRED ARGUMENTS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl o Ar format-type
+.It Fl -format Ar format-type
+.Ar format-type
+is either
+.Ar exodus
+or
+.Ar avatar .
+See the
+.Sx FORMATS
+section for details. The default is
+.Ar exodus
+.It Fl -train
+Build the decision trees.
+.It Fl -test
+Run testing data through the decision trees.
+.El
+.Pp
+NOTE: The
+.Fl -train
+and
+.Fl -test
+options may be given together or separately.
+.Pp
+NOTE: See the
+.Sx FILENAMES
+section for file naming conventions.
+.Pp
+.so man1/general_opts
+.Pp
+.so man1/exodus_args
+.It Fl -train-times Ar range
+Use the one-based timesteps given in
+.Ar range
+for training.
+.Ar Range
+is a comma and dash separated list of integers such as "1-4,6" or "5,7-10,12,14,20-22"
+.It Fl -test-times Ar range
+Use the one-based timesteps given in
+.Ar range
+for training or testing.
+.Ar Range
+is a comma and dash separated list of integers such as "1-4,6" or "5,7-10,12,14,20-22"
+.El
+.Pp
+.so man1/avatar_args
+.Pp
+.so man1/avatar_opts
+.Pp
+.so man1/tree_opts
+.Pp
+.so man1/ensemble_options
+.Pp
+.Ss ENSEMBLE COMBINATION OPTIONS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl -do-mmv
+Do margin majority voting
+.It Fl -do-emv
+Do ensemble majority voting
+.It Fl -do-memv
+Do margin ensemble majority voting
+.It Fl -do-pmv
+Do probability majority voting
+.It Fl -do-spmv
+Do scaled probability majority voting
+.El
+.Pp
+.so man1/skew
+.Pp
+.so man1/alt_filenames
+.Pp
+.so man1/output_options
+.Pp
+.so man1/misc_options
+.Pp
+.so man1/formats
+.Pp
+.so man1/filenames
+.Pp
+.Sh EXAMPLES
+.Pp
+.Dl avatardt -o avatar -f autos --truth-column=26 --train --test --output-confusion-matrix --output-accuracies
+.Pp
+Will build a single tree by training on the data in "autos.data" using column 26 as the
+true class. The data in "autos.test" will be used for testing and voted/average accuracies and
+the confusion matrix will be printed on stdout.
+.Pp
+.Dl avatardt -o avatar -f autos --truth-column=26 --train --test --output-confusion-matrix -B
+.Pp
+Will do the same as the example above except the trees will be built using 100% bags.
+.Pp
+.Dl avatardt -o exodus -d can.ex2 -P partitions -C can.classes --test-times 16 --do-mmv --output-confusion-matrix
+.Pp
+Will test using the data in "can.ex2" at timestep 16. The ensemble files corresponding to the
+exodus files in the file "partitions" will be mass majority voted and voted accuracy and the
+confusion matrix will be printed on stdout.
+.Sh FILES
+.Pp
+.Pp
+.Sh SEE ALSO
+.Pp
+.Xr avatarmpi 1,
+.Xr crossvalfc 1
+.Pp
+.Sh HISTORY
+.Pp

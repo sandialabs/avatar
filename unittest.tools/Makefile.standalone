@@ -1,0 +1,88 @@
+## $Source: /home/Repositories/avatar/avatar-copy/unittest.tools/Makefile,v $
+## $Revision: 1.2 $
+## $Date: 2006/02/03 03:49:58 $
+## 
+## Makefile for unit tests (using check)
+##
+include ../Makefile.include
+
+CHECK_HOME = ../util/check
+CK_CPPFLAGS = ${CPPFLAGS} -I${CHECK_HOME}/src
+CK_LDFLAGS = ${LDFLAGS} -L${CHECK_HOME}/src
+CK_LDLIBS = ${LDLIBS} -lcheck
+
+##
+## Files (in alphabetical order)
+##
+
+CHECK_HFILES = checkall.h
+CHECK_MAIN = checkall.c
+CHECK_SRCS = \
+	checkarrayutils.c \
+	checkccregions.c
+#CHECK_SRCS2 = \
+#	checkfileio2.c \
+#	checksafcover2.c
+
+CHECK_OBJS = $(CHECK_SRCS:.c=.o)
+#CHECK_OBJS2 = $(CHECK_SRCS2:.c=.o)
+CHECK_EXES = $(CHECK_MAIN:.c=)
+#CHECK_EXES2 = $(CHECK_EXES:=2)
+
+#ALL_FILES = Makefile $(CHECK_HFILES) $(CHECK_MAIN) $(CHECK_SRCS) $(CHECK_SRCS2)
+ALL_FILES = Makefile $(CHECK_HFILES) $(CHECK_MAIN) $(CHECK_SRCS)
+
+
+##
+## Targets
+##
+
+first : ${CHECK_EXES}
+
+check: ${CHECK_EXES}
+	./checkall
+
+#check2: ${CHECK_EXES2}
+#	./checkall2
+
+checkall : checkall.c $(CHECK_HFILES) $(CHECK_OBJS)
+	$(CC) -o $@ $(CFLAGS) -I../$(DDLIB_PATH) $(CK_CPPFLAGS) \
+		$(CHECK_MAIN) $(CHECK_OBJS) \
+		-L../$(DDLIB_PATH) $(CK_LDFLAGS) $(FCLDLIB) $(DDLDLIB) $(CK_LDLIBS)
+
+#checkall2 : checkall.c $(CHECK_HFILES) $(CHECK_OBJS2)
+#	$(CC) -o $@ $(CFLAGS) -DEXTERNAL_DATA -I../$(FCLIB_PATH) $(CK_CPPFLAGS) \
+#		$(CHECK_MAIN) $(CHECK_OBJS2) \
+#		-L../$(FCLIB_PATH) $(CK_LDFLAGS) $(FCLDLIB) $(CK_LDLIBS)
+
+# unit tests are dependent on the fc library
+# this will update the local excutables if the library is new,
+# but will not automatically update the library if it needs it
+# (not dependent on check library since that should be static)
+$(CHECK_EXES) : ../$(DDLIB_PATH)/$(DDLIB)
+$(CHECK_OBJS) : ../$(DDLIB_PATH)/$(DDLIB)
+$(CHECK_EXES2) : ../$(DDLIB_PATH)/$(DDLIB)
+$(CHECK_OBJS) : ../$(DDLIB_PATH)/$(DDLIB)
+
+clean : 
+	$(RM) *.o $(CHECK_EXES) $(CHECK_EXES2) *.saf *.exo $(GCOV_FILES)
+
+release :
+	-for i in $(ALL_FILES); do \
+	  (cd ..; tar --append --file=$(FC_RELEASE).tar \
+	    $(FC_RELEASE)/unittest/$$i) \
+	done
+
+# generic compiling directives
+%.o : %.c $(CHECK_HFILES)
+	$(CC) -c -o $@ $(CFLAGS) -I../$(DDLIB_PATH) $(CK_CPPFLAGS) $<
+
+# special compiling directives for check2 tests
+#checksafcover2.o : checksafcover2.c $(CHECK_HFILES)
+#	$(CC) -c -o $@ $(CFLAGS) -DFCLIB_DATA_DIR='"${FCLIB_DATA_DIR}"' \
+#                 -I../$(FCLIB_PATH) $(CK_CPPFLAGS) $<
+#checkfileio2.o : checkfileio2.c $(CHECK_HFILES)
+#	$(CC) -c -o $@ $(CFLAGS) -DFCLIB_DATA_DIR='"${FCLIB_DATA_DIR}"' \
+#                 -I../$(FCLIB_PATH) $(CK_CPPFLAGS) $<
+
+.PHONY : first check check2 clean release

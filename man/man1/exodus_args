@@ -1,0 +1,24 @@
+.Ss EXODUS-SPECIFIC ARGUMENTS
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl d Ar file
+.It Fl -datafile Ar file
+Specifies the exodus file to use for training. The
+trees are written to a
+.Ar file
+but with the extension replaced by
+.Ar .trees .
+.It Fl V Ar name
+.It Fl -class-var Ar name
+Use the variable named
+.Ar name
+as the class definition.
+.It Fl C Ar file
+.It Fl -class-file Ar file
+Use
+.Ar file
+as the class configuration file. The 
+.Fl -class-var
+command line argument overrides the class variable as defined in the class-file. See the
+.Sx FORMATS
+section for details.

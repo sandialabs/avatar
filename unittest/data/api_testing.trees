@@ -1,0 +1,33 @@
+#============================================================
+#Data Format            : avatar
+#Filestem               : api_testing
+#Truth Column           : 5
+#Number of Trees        : 1
+#Seed for *rand48       : 1546555229
+#Training Data          : ./api_testing.data
+#Names File             : ./api_testing.names
+#Names File is string?  : FALSE
+#Ensemble File          : ./api_testing.trees
+#Verbosity              : 0
+#Split On Zero Gain     : FALSE
+#Subsample For Splits   : 0
+#Collapse Subtrees      : TRUE
+#Dynamic Bounds         : TRUE
+#Minimum Examples       : 2
+#Split Method           : C45 Style
+#Save Trees             : TRUE
+#============================================================
+NumTrainingExamples  12
+NumClasses           2
+NumExamplesPerClass: 8 4 
+NumAttributes        4
+NumSkippedAttributes 0
+NumTrees             1
+AttributeTypes: CONTINUOUS CONTINUOUS CONTINUOUS CONTINUOUS 
+SkipAttributes: NOSKIP NOSKIP NOSKIP NOSKIP 
+MissingAttributeValues: 13,13,1,3
+Tree 1
+SPLIT CONTINUOUS ATT# 0 < 20.0000
+LEAF Class 0 Proportions 8 0
+SPLIT CONTINUOUS ATT# 0 >= 20.0000
+LEAF Class 1 Proportions 0 4

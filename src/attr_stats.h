@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+#ifndef __ATTR_STATS__
+#define __ATTR_STATS__
+
+typedef struct attr_stats_struct Attr_Stats;
+
+void compute_feature_imp(const DT_Ensemble *ensemble, Attr_Stats *stats);
+void write_feature_imp(FILE* fh, const Attr_Stats* stats);
+
+Attr_Stats* malloc_attr_stats(const CV_Metadata* meta, int num_skipped_features, const int* skipped_features);
+void free_attr_stats(Attr_Stats *stats);
+
+#endif //__ATTR_STATS__

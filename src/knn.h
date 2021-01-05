@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+typedef struct k_nearest_neighbors_struct {
+    int neighbor;
+    double distance;
+} Nearest_Neighbors;
+
+void compute_knn(CV_Subset data, int k, int distance, Smote_Type s_type, Nearest_Neighbors ***knn);
+double L1_distance(CV_Example a, CV_Example b, CV_Metadata meta, float **float_data, float median);
+double L2_distance(CV_Example a, CV_Example b, CV_Metadata meta, float **float_data, float median);
+float compute_median_of_stdev(CV_Subset data);
+

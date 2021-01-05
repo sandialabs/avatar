@@ -1,0 +1,62 @@
+.Ss SKEW CORRECTION
+.Pp
+.Bl -tag -width "--concatenate" -compact
+.It Fl -majority-bagging
+Use majority bagging
+.It Fl -majority-ivoting
+Use majority ivoting
+.El
+NOTE: The bag/bite size is set automatically to ensure the desired proportions.
+In the future, setting the bag/bite size on the command line will be allowed.
+.Bl -tag -width "--concatenate" -compact
+.It Fl -balanced-learning
+Use balanced learning
+.It Fl -boosting
+Use AdaBoost
+.It Fl -smote Ar smote-type
+.Ar smote-type
+is either
+.Ar open
+or
+.Ar closed .
+Open (default) SMOTE considers points of all classes when computing nearest neighbors.
+Closed SMOTE only considers points of the same class when computing nearest neighbors.
+.It Fl -smoteboost
+Use AdaBoost and closed SMOTE
+.It Fl -distance-type Ar num
+The distance type used to compute nearest neightbors in SMOTE.
+.Ar num
+= 2 is Euclidean (default) and
+.Ar num
+= 1 is Manhattan.
+.El
+.Pp
+The following arguments are required for all skew correction methods except boosting:
+.Bl -tag -width "--concatenate" -compact
+.It Fl -minority-classes Ar list
+.Ar list
+is a comma-separated list of minority class labels.
+.It Fl -proportions Ar list
+.Ar list
+is a
+.Ar colon-separated
+list of the desired proportions for the minority classes. The order of the
+proportions must  be the same as the order of the classes in the minority-classes
+list. The proportions should be entered as percentages, i.e. in the range [0,100].
+Only proportions for the minorty classes are specified since the proportions for
+the majority classes are computed to achieve the minority class proportions and
+maintain the relative proportions among the majority classes in the original data.
+Therefore, the sum of all specified proportions will not equal 100.
+.El
+.Pp
+EXAMPLE: Five classes with labels foo,bar,baz,bas,fez and proportions of 5:20:8:25:42 in the original dataset.
+If the foo and baz classes should be corrected to have proportions of 20:20 then the following
+arguments would be given:
+.Bl -tag -width "--concatenate" -compact
+.It Fl -minority-classes=foo,baz
+.It Fl -proportions=20:20
+.El
+This will result in the five classes having the following proportions 20:13.79:20:17.24:28.97
+(or as close as is possible) in the SMOTEd dataset. The three majority classes are in the same
+proportion to each other as they were in the original dataset and the minority classes
+have the proportions specified on the command line.

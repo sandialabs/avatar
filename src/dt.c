@@ -1,6 +1,7 @@
+/**********************************************************************************
 Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -29,5 +30,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-For questions, comments or contributions contact 
-Philip Kegelmeyer, wpk@sandia.gov 
+For questions, comments or contributions contact
+Philip Kegelmeyer, wpk@sandia.gov
+*******************************************************************************/
+#include "avatar_dt.h"
+
+//Modified by DACIESL June-04-08: Laplacean Estimates
+//uses new save_tree call
+
+//-------------------------------------------------------------------------------------------
+// 2020/08/03: Argument list changed by Cosmin Safta
+// the original longer list lead to a compiler error with clang as the number of arguments
+// is larger than the standard C allows. The extra three arguments are not currently
+// needed and are thus commented out both here as well as in avatar_dt.c and .h
+//-------------------------------------------------------------------------------------------
+//int main (int argc, char **argv, char* names_file, char* tree_file, char* test_data_file) {
+int main (int argc, char **argv) {
+  //return avatar_dt (argc, argv, names_file, tree_file, test_data_file);
+  return avatar_dt (argc, argv);
+}

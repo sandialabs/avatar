@@ -1,6 +1,7 @@
-Avatar Tools
-
-Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S. Government retains certain rights in this software.
+/********************************************************************************** 
+Avatar Tools 
+Copyright (c) 2019, National Technology and Engineering Solutions of Sandia, LLC
+All rights reserved. 
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,3 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
+*******************************************************************************/
+void decode_minority_class_names(CV_Metadata meta, Args_Opts *args);
+void update_actual_att_props(int init, CV_Metadata meta, Args_Opts *args);
+void compute_number_of_clumps(CV_Metadata meta, Args_Opts *args, int *num_p, int *num_s);
+int _num_per_class_per_clump(int class, int num_clumps, CV_Metadata meta, Args_Opts args);
