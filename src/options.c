@@ -480,8 +480,10 @@ Args_Opts process_opts(int argc, char **argv) {//, Args_Opts *args) {
                     included_features[features_in_out[i]-1] = FALSE; // Convert user's 1-based feature id to 0-based
                 
                 // Update excluded feature list
-                free(Args.skipped_features);
-                Args.skipped_features = NULL;
+                if (Args.skipped_features) {
+                    free(Args.skipped_features);
+                    Args.skipped_features = NULL;
+                }
                 free(Args.explicitly_skipped_features);
                 Args.explicitly_skipped_features = NULL;
                 Args.num_skipped_features = 0;
@@ -862,7 +864,10 @@ void free_Args_Opts(Args_Opts args) {
     free(args.datafile);
     free(args.names_file);
     free(args.trees_file);
-    free(args.skipped_features);
+    if (Args.skipped_features) {
+        free(args.skipped_features);
+        args.skipped_features = NULL;
+    }
     free(args.class_var_name);
     free(args.data_path);
     free(args.base_filestem);

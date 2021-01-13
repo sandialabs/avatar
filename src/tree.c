@@ -407,7 +407,8 @@ void train_ivote(CV_Subset train_data, CV_Subset test_data, int fold_num, Vote_C
     
     CV_Subset *data_skw, data_bite, *data_rs;
     data_skw = (CV_Subset *)malloc(sizeof(CV_Subset));
-    data_rs = (CV_Subset *)malloc(sizeof(CV_Subset));
+    data_rs  = (CV_Subset *)malloc(sizeof(CV_Subset));
+    reset_CV_Subset(&data_bite);
 
     Tree_Bookkeeping Books;
     DT_Node *Tree;
@@ -466,7 +467,7 @@ void train_ivote(CV_Subset train_data, CV_Subset test_data, int fold_num, Vote_C
             for (i = 0; i < train_data.meta.num_attributes; i++)
                 noisy_cache[i]->current_classifier_count = num_trees + 1;
         
-        if (args.do_balanced_learning == TRUE) {
+       if (args.do_balanced_learning == TRUE) {
             get_next_balanced_set(num_trees, &train_data, data_skw, args);
         } else if (args.do_boosting == TRUE) {
             get_boosted_set(&train_data, data_skw);
@@ -580,6 +581,8 @@ void train_ivote(CV_Subset train_data, CV_Subset test_data, int fold_num, Vote_C
             if (args.save_trees ||
                 (args.auto_stop && (args.output_probabilities == TRUE || args.output_margins == TRUE))) {
                 DT_Ensemble ensemble;
+                reset_DT_Ensemble(&ensemble);
+
                 read_ensemble(&ensemble, fold_num, stop_building_at, &args);
                 // Rewrite ensemble file to get NumTrees right and eliminate extra trees
                 if (args.save_trees) {

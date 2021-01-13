@@ -60,8 +60,8 @@ int main (int argc, char **argv) {
   int i, j;
   //int gid;
   CV_Dataset Dataset;
-  CV_Subset Full_Trainset;
-  CV_Class Class;
+  CV_Subset  Full_Trainset;
+  CV_Class   Class;
   AV_SortedBlobArray SortedExamples;
   AV_ReturnCode rc;
   Args_Opts Args;

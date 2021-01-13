@@ -107,13 +107,8 @@ short tree_insert(BST_Node **tree, Tree_Bookkeeping *books, float new_value) {
 
 int translate(float *array, float value, int low, int high) {
     int match = (low + high)/2;
-    //    printf("   low -> match -> high = %d -> %d -> %d\n", low, match, high);
-    //    printf("   value -> value = %10.6e -> %10.6e\n", value, array[match]);
-    if(isnan(value)) {
-      printf("ERROR: Nan value detected\n");
-      exit(1);
-    }
-       
+    //printf("   low -> match -> high = %d -> %d -> %d\n", low, match, high);
+    //printf("   value -> value = %f -> %f\n", value, array[match]);
     if (value == array[match])
         return match;
     else {

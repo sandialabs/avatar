@@ -830,9 +830,7 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
             } else if (num_tkns > 1 && ! strcasecmp(tkns[1], "labels")) {
                 found_label = 2;
             }
-	    //	    printf("tkns[0] = %s\n",tkns[0]);
-	    //	    printf("found_label = %d\n",found_label);
-            if (found_label > 0){// && found_label < num_tkns) {
+            if (found_label > 0) {
                 // Process attribute labels
                 
                 // First, replace elements[0] with first label (i.e. remove '#labels') so elements holds the labels
@@ -1135,13 +1133,6 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
     int line_num = 1;
     //while (fscanf(fh, "%[^\n]", strbuf) > 0 || fscanf(fh, "%[\n]", strbuf) > 0) {
     while (read_line(fh, &strbuf) > 0) {
-      /*
-      {
-        char prefix[81];
-        memcpy(prefix,strbuf,80);
-        printf("reading line = %s\n",prefix);
-      }
-      */
         //if (strbuf[0] == '\n') {
         //    line_num++;
         //    continue;
@@ -1222,8 +1213,6 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
                 }
             }
             this_att = av_strdup(elements[all_atts + (all_atts < args.truth_column-1 ? 0 : 1)]);
-
-
             num_att_xlate_errors += add_attribute_char_value(this_att, sub, ex_num, j, all_atts, line_num,
                                                              filename, args.truth_column, elements);
             free(this_att);
