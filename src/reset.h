@@ -38,7 +38,6 @@ Philip Kegelmeyer, wpk@sandia.gov
 
 #include "crossval.h"
 
-
 void reset_CV_Class(CV_Class *cvc) ;
 void reset_CV_Dataset(CV_Dataset *cvd) ;
 void reset_Exo_Data(Exo_Data *ed) ;
