@@ -45,5 +45,8 @@ void reset_CV_Example(CV_Example *cve) ;
 void reset_CV_Metadata(CV_Metadata *cvm) ;
 void reset_CV_Subset(CV_Subset *cvs) ;
 void reset_DT_Ensemble(DT_Ensemble *dte) ;
+void reset_DT_Node(DT_Node *dtn) ;
+void reset_Args_Opts(Args_Opts *opts);
+void reset_CV_Matrix(CV_Matrix *mat) ;
 
 #endif // __RESET__

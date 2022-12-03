@@ -120,7 +120,7 @@ main(int argc, char **argv)
     ens_opts.caller = UNKNOWN_CALLER;
     ens_opts.do_testing = TRUE;
     ens_opts.test_file = MyArgs.ref_datafile;
-    if (!read_data_file(&dataset, &subset, &classmeta, &sorted_examples, "test", ens_opts)) {
+    if (!read_data_file(&dataset, &subset, &classmeta, &sorted_examples, "test", &ens_opts)) {
         fprintf(stderr, "Error reading data file: %s\n", MyArgs.ref_datafile);
         exit(-1);
     }
@@ -154,7 +154,7 @@ main(int argc, char **argv)
     av_exitIfError(av_initSortedBlobArray(&sorted_examples));
     memset(&ds, 0, sizeof(FC_Dataset));
     ens_opts.test_file = MyArgs.datafile;
-    if (!read_data_file(&dataset, &subset, &classmeta, &sorted_examples, "test", ens_opts)) {
+    if (!read_data_file(&dataset, &subset, &classmeta, &sorted_examples, "test", &ens_opts)) {
         fprintf(stderr, "Error reading data file: %s\n", MyArgs.datafile);
         exit(-1);
     }

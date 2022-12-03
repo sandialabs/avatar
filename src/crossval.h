@@ -476,5 +476,4 @@ int cv_example_compare_by_fold(const void *n, const void *m);
 //int qsort_example_compare_by_rgid(const void *n, const void *m);
 //int cv_example_compare_by_rgid(const void *n, const void *m);
 
-
 #endif // __CROSSVAL__

@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 For questions, comments or contributions contact 
 Philip Kegelmeyer, wpk@sandia.gov 
 *******************************************************************************/
-#define AT_MPI_BUFMAX 25000000
+#define AT_MPI_BUFMAX 250000000
 #define AT_MPI_ROOT_RANK 0
 
 void derive_MPI_OPTIONS( void );

@@ -46,7 +46,7 @@ int store_predictions_text(CV_Subset test_data, Vote_Cache cache, CV_Matrix matr
 int add_fold_data(int num_folds, CV_Dataset data, CV_Subset *train, int **fold_pop, Args_Opts args);
 int read_opendt_names_file(CV_Dataset *data, CV_Class *class, Args_Opts args);
 int read_names_file(CV_Metadata *meta, CV_Class *class, Args_Opts *args, Boolean update_skip_list);
-int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedBlobArray *blob, char *ext, Args_Opts args);
+int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedBlobArray *blob, char *ext, Args_Opts *args);
 //int store_predictions_text(CV_Subset test_data, Vote_Cache cache, CV_Matrix matrix, CV_Voting votes, int fold, Args_Opts args);
 int _store_predictions_text(CV_Subset test_data, CV_Matrix matrix, Args_Opts args);
 void read_metadata(FC_Dataset *ds, CV_Metadata *meta, Args_Opts *args);

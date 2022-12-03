@@ -106,6 +106,7 @@ void read_metadata(FC_Dataset *ds, CV_Metadata *meta, Args_Opts *args) {
 }
 
 void read_testing_data(FC_Dataset *ds, CV_Metadata train_meta, CV_Dataset *dataset, CV_Subset *subset, AV_SortedBlobArray *sorted_examples, Args_Opts *args) {
+
     int i;
     CV_Class Class = {0};
     AV_ReturnCode rc;
@@ -135,7 +136,7 @@ void read_testing_data(FC_Dataset *ds, CV_Metadata train_meta, CV_Dataset *datas
         // Need the missing values from the training data
         subset->meta.Missing = train_meta.Missing;
     }
-    
+
     if (args->format == EXODUS_FORMAT) {
         // Add the testing data for the requested timesteps
         for (i = 0; i < args->num_test_times; i++) {
@@ -150,7 +151,7 @@ void read_testing_data(FC_Dataset *ds, CV_Metadata train_meta, CV_Dataset *datas
             fprintf(stderr, "Error reading names file\n");
             exit(-8);
         } 
-        if (! read_data_file(dataset, subset, &Class, sorted_examples, "test", *args)) {
+        if (! read_data_file(dataset, subset, &Class, sorted_examples, "test", args)) {
             fprintf(stderr, "Error reading data file\n");
             exit(-8);
         }
@@ -215,7 +216,7 @@ void read_training_data(FC_Dataset *ds, CV_Dataset *dataset, CV_Subset *subset, 
             fprintf(stderr, "Error reading names file\n");
             exit(-8);
         }
-        if (! read_data_file(dataset, subset, &Class, sorted_examples, "data", *args)) {
+        if (! read_data_file(dataset, subset, &Class, sorted_examples, "data", args)) {
             fprintf(stderr, "Error reading data file\n");
             exit(-8);
         }
@@ -721,8 +722,8 @@ int add_fold_data(int num_folds, CV_Dataset dataset, CV_Subset *subset, int **fo
 
 //NOTE: since args is passed by value, any pointer members allocated here must be freed at the end of the function
 //Use argsIn to remember the pointers that were passed in, so that it's easy to tell which ones changed in args locally
-int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedBlobArray *blob, char *ext, Args_Opts args) {
-    Args_Opts argsIn = args;
+int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedBlobArray *blob, char *ext, Args_Opts *args) {
+    Args_Opts* argsIn = args;
     int i, j, k, all_atts;
     char *filename = NULL;
     FILE *fh = NULL;
@@ -774,9 +775,9 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
     init_att_handling(sub->meta);
     
     if (! strcmp(ext, "data")){
-	filename = av_strdup(args.datafile);
-        if (args.train_file_is_a_string == TRUE){
-	    fh = fmemopen(args.train_string, strlen(args.train_string), "r");
+        filename = av_strdup(args->datafile);
+        if (args->train_file_is_a_string == TRUE){
+	        fh = fmemopen(args->train_string, strlen(args->train_string), "r");
     	}
     	else {
             if ((fh = fopen(filename, "r")) == NULL) {
@@ -786,9 +787,9 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
         }
     }
     else if (! strcmp(ext, "test")){
-        filename = av_strdup(args.test_file);
-    	if (args.test_file_is_a_string == TRUE){
-	    fh = fmemopen(args.test_string, strlen(args.test_string), "r");
+        filename = av_strdup(args->test_file);
+    	if (args->test_file_is_a_string == TRUE){
+	    fh = fmemopen(args->test_string, strlen(args->test_string), "r");
     	}
     	else {
             if ((fh = fopen(filename, "r")) == NULL) {
@@ -838,10 +839,10 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
                 temp = (char *)malloc(strlen(elements[0]) * sizeof(char));
                 temp = strstr(elements[0], tkns[found_label]);
                 elements[0] = av_strdup(temp);
-                // printf("Got %d attributes, %d skipped features, %d elements\n", sub->meta.num_attributes, args.num_skipped_features, num_elements);
-                if (sub->meta.num_attributes + args.num_skipped_features + 1 != num_elements) { // +1 for the class column
+                // printf("Got %d attributes, %d skipped features, %d elements\n", sub->meta.num_attributes, args->num_skipped_features, num_elements);
+                if (sub->meta.num_attributes + args->num_skipped_features + 1 != num_elements) { // +1 for the class column
                     fprintf(stderr, "ERROR: .%s file has %d columns but should have %d\n",
-                                     ext, num_elements, sub->meta.num_attributes+args.num_skipped_features+1);
+                                     ext, num_elements, sub->meta.num_attributes+args->num_skipped_features+1);
                     exit(-1);
                 }
                 int num_mismatches = 0;
@@ -850,12 +851,12 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
                 for ( k = 0; k < num_elements; k++) {
                     //printf("Looking at element %d. Current att_num = %d\n", k+1, used_atts+1);
                     // Skip over skipped features
-                  if (find_int(k+1, args.num_skipped_features, args.skipped_features)) {
+                  if (find_int(k+1, args->num_skipped_features, args->skipped_features)) {
                         //printf("Skipping feature in column %d\n", k+1);
                         continue;
                     }
                     // Skip over truth column
-                    if (args.truth_column == k+1) {
+                    if (args->truth_column == k+1) {
                         //printf("Skipping class in column %d\n", k+1);
                         continue;
                     }
@@ -892,9 +893,9 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
         }
 
         // Make sure we have enough elements for all attributes (including skipped ones) and the true class
-        if (num_elements < data->meta.num_attributes + args.num_skipped_features + 1){
+        if (num_elements < data->meta.num_attributes + args->num_skipped_features + 1){
             fprintf(stderr, "Expected at least %d+%d+1 values but read %d ... skipping\n",
-                                                        data->meta.num_attributes, args.num_skipped_features, num_elements);
+                                                        data->meta.num_attributes, args->num_skipped_features, num_elements);
             continue;
         }
         
@@ -916,25 +917,25 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
         // Build tree for getting distinct values for continuous attributes
         // Also, temporarily store data for filling in missing values
         
-        // Loop over all features but we'll skip args.num_skipped_features to be left with data.num_attributes
-        for (all_atts = 0; all_atts < data->meta.num_attributes + args.num_skipped_features; all_atts++) {
-            if (args.truth_column > 0 && all_atts+1 >= args.truth_column &&
-                find_int(all_atts+2, args.num_skipped_features, args.skipped_features)) {
+        // Loop over all features but we'll skip args->num_skipped_features to be left with data.num_attributes
+        for (all_atts = 0; all_atts < data->meta.num_attributes + args->num_skipped_features; all_atts++) {
+            if (args->truth_column > 0 && all_atts+1 >= args->truth_column &&
+                find_int(all_atts+2, args->num_skipped_features, args->skipped_features)) {
                 // The current attribute is in a column past the truth column so look for the
                 // attribute number + 2 (extra +1 is because all_atts is 0-based) in the list
                 // of features to skip since the list is based on column number and not attribute number
                 //printf("Skipping this att because %d+1 is in the list of features to skip\n", all_atts+1);
                 continue;
             }
-            if (args.truth_column > 0 && all_atts+1 < args.truth_column &&
-                find_int(all_atts+1, args.num_skipped_features, args.skipped_features)) {
+            if (args->truth_column > 0 && all_atts+1 < args->truth_column &&
+                find_int(all_atts+1, args->num_skipped_features, args->skipped_features)) {
                 // The current attribute is before the truth column so attribute number corresponds
                 // to column number.
                 //printf("Skipping this att because %d is in the list of features to skip\n", all_atts+1);
                 continue;
             }
-            if (args.truth_column < 0 &&
-                find_int(all_atts+1, args.num_skipped_features, args.skipped_features)) {
+            if (args->truth_column < 0 &&
+                find_int(all_atts+1, args->num_skipped_features, args->skipped_features)) {
                 // The truth column is last so all attributes are before the truth column
                 //printf("Skipping this att because %d is in the list of features to skip\n", all_atts+1);
                 continue;
@@ -944,8 +945,8 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
             j++; // This is the index for the current attribute allowing for skips
             //printf("Global (1-based) feature %d is this run's (1-based) feature %d\n", all_atts+1, j+1);
             
-            //printf("Using column %d for this att\n", all_atts + (all_atts < args.truth_column-1 ? 0 : 1));
-            this_att = av_strdup(elements[all_atts + (all_atts < args.truth_column-1 ? 0 : 1)]);
+            //printf("Using column %d for this att\n", all_atts + (all_atts < args->truth_column-1 ? 0 : 1));
+            this_att = av_strdup(elements[all_atts + (all_atts < args->truth_column-1 ? 0 : 1)]);
             //printf("Read '%s' as att value\n", this_att);
             int dv = process_attribute_char_value(this_att, j, sub->meta);
             /*
@@ -1001,33 +1002,35 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
     } else {
         // If we are training, then we've read the training file already and know the missing values
         // so use them from the CV_Subset
-        if (args.do_training == TRUE) {
+        if (args->do_training == TRUE) {
             for (i = 0; i < sub->meta.num_attributes; i++)
                 if (sub->meta.attribute_types[i] == CONTINUOUS)
                     process_attribute_float_value(sub->meta.Missing[i].Continuous, i);
         // If we didn't train, then we don't know the missing values yet.
         // In this case, use a throw-away ensemble to read the metadata in the trees file to get them
         } else {
-            if (args.partitions_filename != NULL) {
+            if (args->partitions_filename != NULL) {
                 // If we are using a partition file, then add all missing values from all partitions' ensemble files
                 CV_Partition partitions;
-                read_partition_file(&partitions, &args);
+                read_partition_file(&partitions, args);
                 // Save some parameters
-                char *df = av_strdup(args.datafile);
-                char *bf = av_strdup(args.base_filestem);
-                char *dp = av_strdup(args.data_path);
-                free(args.datafile);
-                free(args.base_filestem);
-                free(args.data_path);
+                char *df = av_strdup(args->datafile);
+                char *bf = av_strdup(args->base_filestem);
+                char *dp = av_strdup(args->data_path);
+                char *tf = av_strdup(args->test_file);
+                free(args->datafile);
+                free(args->base_filestem);
+                free(args->data_path);
+                free(args->test_file);
                 // Read all partition tree files
                 for (i = 0; i < partitions.num_partitions; i++) {
-                    args.datafile = av_strdup(partitions.partition_datafile[i]);
-                    args.base_filestem = av_strdup(partitions.partition_base_filestem[i]);
-                    args.data_path = av_strdup(partitions.partition_data_path[i]);
-                    if (args.partitions_filename != NULL)
-                        set_output_filenames(&args, TRUE, TRUE);
+                    args->datafile = av_strdup(partitions.partition_datafile[i]);
+                    args->base_filestem = av_strdup(partitions.partition_base_filestem[i]);
+                    args->data_path = av_strdup(partitions.partition_data_path[i]);
+                    if (args->partitions_filename != NULL)
+                        set_output_filenames(args, TRUE, TRUE);
                     else
-                        set_output_filenames(&args, FALSE, FALSE);
+                        set_output_filenames(args, FALSE, FALSE);
                     
                     DT_Ensemble junk_ensemble = {0};
                     FILE *tree_file;
@@ -1038,15 +1041,15 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
                     junk_ensemble.num_trees = 0;
                     
                     // Open tree file
-                    if (args.trees_file_is_a_string == TRUE){
-                      tree_file = fmemopen(args.trees_string, strlen(args.trees_string), "r");
+                    if (args->trees_file_is_a_string == TRUE){
+                      tree_file = fmemopen(args->trees_string, strlen(args->trees_string), "r");
                     } else {
-                      if ((tree_file = fopen(args.trees_file, "r")) == NULL) {
-                        fprintf(stderr, "Failed to open file for reading trees: '%s'\nExiting ...\n", args.trees_file);
+                      if ((tree_file = fopen(args->trees_file, "r")) == NULL) {
+                        fprintf(stderr, "Failed to open file for reading trees: '%s'\nExiting ...\n", args->trees_file);
                         exit(8);
                       }
                     }
-                    read_ensemble_metadata(tree_file, &junk_ensemble, 1, &args);
+                    read_ensemble_metadata(tree_file, &junk_ensemble, 1, args);
 /* NEED TO FIGURE OUT WHAT MISSING VALUES TO USE WHEN DOING TESTING SINCE WE HAVE MULTIPLTE SETS */
                     for (i = 0; i < junk_ensemble.num_attributes; i++)
                         if (junk_ensemble.attribute_types[i] == CONTINUOUS)
@@ -1055,15 +1058,17 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
                     free_DT_Ensemble(junk_ensemble, TEST_MODE);
                 }
                 // Restore
-                args.datafile = av_strdup(df);
-                args.base_filestem = av_strdup(bf);
-                args.data_path = av_strdup(dp);
+                args->datafile = av_strdup(df);
+                args->base_filestem = av_strdup(bf);
+                args->data_path = av_strdup(dp);
+                args->test_file = av_strdup(tf);
                 free(df);
                 free(bf);
                 free(dp);
+                free(tf);
             } else {
                 DT_Ensemble junk_ensemble = {0};
-                char *tree_filename = build_output_filename(-1, args.trees_file, args);
+                char *tree_filename = build_output_filename(-1, args->trees_file, *args);
                 FILE *tree_file;
                 
                 // Initialize
@@ -1072,8 +1077,8 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
                 junk_ensemble.num_trees = 0;
                 
                 // Open tree file
-                if (args.trees_file_is_a_string == TRUE){
-                  tree_file = fmemopen(args.trees_string, strlen(args.trees_string), "r");
+                if (args->trees_file_is_a_string == TRUE){
+                  tree_file = fmemopen(args->trees_string, strlen(args->trees_string), "r");
                 } else {
                   if ((tree_file = fopen(tree_filename, "r")) == NULL) {
                     fprintf(stderr, "Failed to open file for reading trees: '%s'\nExiting ...\n", tree_filename);
@@ -1081,7 +1086,7 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
                   }
                 }
 
-                read_ensemble_metadata(tree_file, &junk_ensemble, 1, &args);
+                read_ensemble_metadata(tree_file, &junk_ensemble, 1, args);
                 free(sub->meta.Missing);
                 sub->meta.Missing = (union data_point_union *)malloc(junk_ensemble.num_attributes * sizeof(union data_point_union));
                 for (i = 0; i < junk_ensemble.num_attributes; i++) {
@@ -1098,7 +1103,7 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
             }
         }
     }
-    
+
     // Create the float array to translate int back to float for each attribute
     create_float_data(sub);
     
@@ -1116,8 +1121,8 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
      * Read data file again and populate the distinct_attribute_value array
      */
 
-    if (args.test_file_is_a_string == TRUE){
-	fh = fmemopen(args.test_string, strlen(args.test_string), "r");
+    if (args->test_file_is_a_string == TRUE){
+	fh = fmemopen(args->test_string, strlen(args->test_string), "r");
     } else {
         if ((fh = fopen(filename, "r")) == NULL) {
                 fprintf(stderr, "Failed to open .%s file: '%s'\n", ext, filename);
@@ -1155,9 +1160,9 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
         }
 
         // Make sure we have enough elements for all attributes and the true class
-        if (num_elements < data->meta.num_attributes + args.num_skipped_features + 1) {
+        if (num_elements < data->meta.num_attributes + args->num_skipped_features + 1) {
             fprintf(stderr, "Expected at least %d+%d+1 values but read %d ... skipping\n",
-                                                data->meta.num_attributes, args.num_skipped_features, num_elements);
+                                                data->meta.num_attributes, args->num_skipped_features, num_elements);
             for (i = 0; i < num_elements; i++)
                 free(elements[i]);
             free(elements);
@@ -1172,28 +1177,28 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
         // continuous attributes get the index into float_data
         // discrete attributes get the index of the discrete attribute value
         
-        // Loop over all features but we'll skip args.num_skipped_features to be left with data.num_attributes
-        //printf("Loopin over %d atts\n", data->meta.num_attributes + args.num_skipped_features);
-        for (all_atts = 0; all_atts < data->meta.num_attributes + args.num_skipped_features; all_atts++) {
+        // Loop over all features but we'll skip args->num_skipped_features to be left with data.num_attributes
+        //printf("Loopin over %d atts\n", data->meta.num_attributes + args->num_skipped_features);
+        for (all_atts = 0; all_atts < data->meta.num_attributes + args->num_skipped_features; all_atts++) {
         //for (all_atts = 0; all_atts < data->meta.num_attributes; all_atts++) {
             
-            if (args.truth_column > 0 && all_atts+1 >= args.truth_column &&
-                find_int(all_atts+2, args.num_skipped_features, args.skipped_features)) {
+            if (args->truth_column > 0 && all_atts+1 >= args->truth_column &&
+                find_int(all_atts+2, args->num_skipped_features, args->skipped_features)) {
                 // The current attribute is in a column past the truth column so look for the
                 // attribute number + 2 (extra +1 is because all_atts is 0-based) in the list
                 // of features to skip since the list is based on column number and not attribute number
                 //printf("Skipping this att because %d+1 is in the list of features to skip\n", all_atts+1);
                 continue;
             }
-            if (args.truth_column > 0 && all_atts+1 < args.truth_column &&
-                find_int(all_atts+1, args.num_skipped_features, args.skipped_features)) {
+            if (args->truth_column > 0 && all_atts+1 < args->truth_column &&
+                find_int(all_atts+1, args->num_skipped_features, args->skipped_features)) {
                 // The current attribute is before the truth column so attribute number corresponds
                 // to column number.
                 //printf("Skipping this att because %d is in the list of features to skip\n", all_atts+1);
                 continue;
             }
-            if (args.truth_column < 0 &&
-                find_int(all_atts+1, args.num_skipped_features, args.skipped_features)) {
+            if (args->truth_column < 0 &&
+                find_int(all_atts+1, args->num_skipped_features, args->skipped_features)) {
                 // The truth column is last so all attributes are before the truth column
                 //printf("Skipping this att because %d is in the list of features to skip\n", all_atts+1);
                 continue;
@@ -1212,27 +1217,27 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
                     fprintf(stderr, "Example %d already exists in SBA\n", ex_num);
                 }
             }
-            this_att = av_strdup(elements[all_atts + (all_atts < args.truth_column-1 ? 0 : 1)]);
+            this_att = av_strdup(elements[all_atts + (all_atts < args->truth_column-1 ? 0 : 1)]);
             num_att_xlate_errors += add_attribute_char_value(this_att, sub, ex_num, j, all_atts, line_num,
-                                                             filename, args.truth_column, elements);
+                                                             filename, args->truth_column, elements);
             free(this_att);
         }
         // Populate the class for this example
         // The class is in the last column
         sub->examples[ex_num].predicted_class_num = -1;
-        //printf("Trying to translate a truth value of '%s' using", elements[args.truth_column-1]);
+        //printf("Trying to translate a truth value of '%s' using", elements[args->truth_column-1]);
         //for (i = 0; i < sub->meta.num_classes; i++)
         //    printf(" '%s'", sub->meta.class_names[i]);
         //printf("\n");
         sub->examples[ex_num].containing_class_num =
-                    translate_discrete(sub->meta.class_names, sub->meta.num_classes, elements[args.truth_column-1]);
+                    translate_discrete(sub->meta.class_names, sub->meta.num_classes, elements[args->truth_column-1]);
         //printf("Incrementing nepc %d\n", sub->examples[ex_num].containing_class_num);
         //printf("  was %d\n", sub->meta.num_examples_per_class[sub->examples[ex_num].containing_class_num]);
         if (sub->examples[ex_num].containing_class_num < 0) {
             // This is an invalid class
-            if (args.output_accuracies == ON) {
+            if (args->output_accuracies == ON) {
                 num_class_xlate_errors++;
-                fprintf(stderr, "Invalid class '%s': line %d of %s\n", elements[args.truth_column-1], line_num, filename);
+                fprintf(stderr, "Invalid class '%s': line %d of %s\n", elements[args->truth_column-1], line_num, filename);
             }
         } else {
             sub->meta.num_examples_per_class[sub->examples[ex_num].containing_class_num]++;
@@ -1251,8 +1256,11 @@ int read_data_file(CV_Dataset *data, CV_Subset *sub, CV_Class *class, AV_SortedB
     fclose(fh);
     free(filename);
 
-    if(argsIn.skipped_features != args.skipped_features)
-      free(args.skipped_features);
+    // FIXME: This might leak memory, but it certainly causes errors if we uncomment things
+    /*    
+    if(argsIn.skipped_features != args->skipped_features)
+      free(args->skipped_features);
+    */
 
     find_int_release();
 
@@ -1316,7 +1324,7 @@ int read_names_file(CV_Metadata *meta, CV_Class *class, Args_Opts *args, Boolean
     uint colID = 0;
     int manual_target = -1;
     int* manual_exclude = NULL;
-    //printf("Reading metadata from %s\n", namesfile);
+    //printf("Reading metadata from %s\n", args->names_file ? args->names_file : "string");
     //_show_skipped_features(stdout, "Initial skipped feature list: ", args->num_skipped_features, args->skipped_features);
 
     // Convert target and list of feature indices from 1-based to 0-based.
@@ -1333,9 +1341,9 @@ int read_names_file(CV_Metadata *meta, CV_Class *class, Args_Opts *args, Boolean
     char* names_data;
 
     if (args->names_file_is_a_string == TRUE){
-	names_data = args->names_string;
+	    names_data = args->names_string;
     } else {
-	names_data = args->names_file;
+	    names_data = args->names_file;
     }
 
     Schema* schema = read_schema(
@@ -1356,8 +1364,7 @@ int read_names_file(CV_Metadata *meta, CV_Class *class, Args_Opts *args, Boolean
     //
 
     // Cosmin added if statement (09/01/2020)
-    if (meta->global_offset != NULL) 
-        free(meta->global_offset);
+    if (meta->global_offset != NULL) free(meta->global_offset);
     meta->global_offset = e_calloc(2, sizeof(int));
 
     // Count the number of active attributes (response variable excluded).
@@ -1430,17 +1437,16 @@ int read_names_file(CV_Metadata *meta, CV_Class *class, Args_Opts *args, Boolean
         uint valID = 0;
         uint arity = meta->num_classes;
         // Cosmin added if statement (09/01/2020)
-        if (meta->class_names != NULL)
-            free(meta->class_names);
+        if (meta->class_names != NULL) free(meta->class_names);
         meta->class_names = e_calloc(arity, sizeof(char*));
         for (valID = 0; valID < arity; ++valID) {
             meta->class_names[valID] = e_strdup(schema_get_class_value(schema, valID));
         }
         // Cosmin added if statement (09/01/2020)
-        if (meta->num_examples_per_class != NULL)
-            free(meta->num_examples_per_class);
+        if (meta->num_examples_per_class != NULL) free(meta->num_examples_per_class);
         meta->num_examples_per_class = e_calloc(arity, sizeof(int));
     }
+
     if (class != NULL) {
         memset(class, 0, sizeof(CV_Class));
         uint valID = 0;
@@ -1459,7 +1465,6 @@ int read_names_file(CV_Metadata *meta, CV_Class *class, Args_Opts *args, Boolean
         class->class_frequencies = e_calloc(arity, sizeof(int));
         class->thresholds = e_calloc(arity, sizeof(float));
     }
-
 
     //
     // Update the arguments structure.
@@ -1837,7 +1842,7 @@ int store_predictions_text(CV_Subset test_data, Vote_Cache cache, CV_Matrix matr
         t_filename = av_strdup(args.test_file);
     else
         return 0;
-//printf("Reading '%s'\n", t_filename);
+    //printf("test: Reading '%s'\n", t_filename);
     if ((p_fh = fopen(p_filename, "w")) == NULL) {
         fprintf(stderr, "Failed to open .pred file for write: '%s'\n", p_filename);
         return 0;

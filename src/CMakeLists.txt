@@ -47,8 +47,25 @@ target_link_libraries(crossvalfc avatar ${FC_LIBRARIES})
 add_executable(rfFeatureValue rffv.c)
 target_link_libraries(rfFeatureValue avatar ${FC_LIBRARIES})
 
-# TODO: Add support for avatarmpi, crossvalmpi
-
 install(TARGETS avatardt crossvalfc rfFeatureValue
   RUNTIME DESTINATION bin
   )
+
+# TODO: Add support for avatarmpi, crossvalmpi
+if(Avatar_ENABLE_MPI)
+  add_library(avatar_mpi STATIC
+    mpi.c
+    ivotempi.c
+    treempi.c)
+
+  add_executable(avatarmpi dtmpi.c)
+  target_link_libraries(avatarmpi avatar_mpi avatar ${FC_LIBRARIES})
+
+  add_executable(crossvalmpi crossvalmpi.c)
+  target_link_libraries(crossvalmpi avatar_mpi avatar ${FC_LIBRARIES})
+
+  install(TARGETS avatarmpi crossvalmpi
+    RUNTIME DESTINATION bin
+    )
+
+endif()

@@ -54,6 +54,7 @@ Philip Kegelmeyer, wpk@sandia.gov
 #include "mpiL.h"
 #include "options.h"
 #include "heartbeat.h"
+#include "reset.h"
 
 //void _train_mpi(CV_Subset *data, DT_Ensemble *ensemble, int myrank, Args_Opts args) {}
 void train_mpi(CV_Partition partitions, DT_Ensemble **ensemble, int myrank, Args_Opts args) {
@@ -101,14 +102,15 @@ void train_mpi(CV_Partition partitions, DT_Ensemble **ensemble, int myrank, Args
         for (i = 1; i < num_procs; i++) {
             //last_part_assigned++;
             last_part_assigned = (last_part_assigned+1) % num_parts;
-            //printf("Reading part %d (%s) and send to proc %d\n",
-            //       last_part_assigned, partitions.partition_filenames[last_part_assigned], i);
+            reset_CV_Subset(&train_data[last_part_assigned]);
             if (part_is_being_crunched_on[last_part_assigned] == -1) {
                 CV_Dataset Train_Dataset;
+                reset_CV_Metadata(&Train_Dataset.meta);
                 AV_SortedBlobArray Train_Sorted_Examples;
                 if (args.format == EXODUS_FORMAT)
                     open_exo_datafile(&ds, partitions.partition_datafile[last_part_assigned]);
                 read_training_data(&ds, &Train_Dataset, &train_data[last_part_assigned], &Train_Sorted_Examples, &args);
+                reset_DT_Ensemble(& ((*ensemble)[last_part_assigned]));
                 (*ensemble)[last_part_assigned].num_trees = 100;
                 init_ensemble(&(*ensemble)[last_part_assigned], train_data[last_part_assigned].meta, args);
                 if (compute_oob_acc == TRUE) {
@@ -139,7 +141,8 @@ void train_mpi(CV_Partition partitions, DT_Ensemble **ensemble, int myrank, Args
     CV_Subset *data_rs, *data_bag;
     data_bag = (CV_Subset *)malloc(sizeof(CV_Subset));
     data_rs = (CV_Subset *)malloc(sizeof(CV_Subset));
-    
+    reset_CV_Subset(&data_bag[0]);
+
     // Initialize weights to flat
     //data->weights = (float *)malloc(data->num_examples * sizeof(float));
     //for (i = 0; i < data->num_examples; i++)
@@ -169,7 +172,7 @@ void train_mpi(CV_Partition partitions, DT_Ensemble **ensemble, int myrank, Args
         int *stop_building_at;
         stop_building_at = (int *)calloc(num_parts, sizeof(int));
         float *best_oob_acc;
-        best_oob_acc = (float *)malloc(num_parts * sizeof(float));
+        best_oob_acc = (float *)calloc(num_parts, sizeof(float));
         
         // Loop until all MPI processes have been told to stop building trees
         while (num_procs_signaled < num_procs-1) {
@@ -336,7 +339,7 @@ void train_mpi(CV_Partition partitions, DT_Ensemble **ensemble, int myrank, Args
             (*ensemble)[0].Books = (Tree_Bookkeeping *)malloc(1 * sizeof(Tree_Bookkeeping));
             
             if (args.do_bagging == TRUE)
-                make_bag(&train_data[0], data_bag, args);
+                make_bag(&train_data[0], data_bag, args, 0);
             else
                 data_bag = &train_data[0];
             

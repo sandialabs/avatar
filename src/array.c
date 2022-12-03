@@ -193,7 +193,7 @@ int remove_dups_int(int num, int *array) {
 
 int array_to_range(const int *array, int num, char **range) {
     int i;
-    if(num == 0)
+    if(num == 0 || !array)
     {
       *range = av_strdup("none");
       return 4;

@@ -126,7 +126,7 @@ int main (int argc, char **argv) {
             fprintf(stderr, "Error reading names file\n");
             exit(-8);
         }
-        if (! read_data_file(&Dataset, &Full_Trainset, &Class, &SortedExamples, "data", Args)) {
+        if (! read_data_file(&Dataset, &Full_Trainset, &Class, &SortedExamples, "data", &Args)) {
             fprintf(stderr, "Error reading data file\n");
             exit(-8);
         }
@@ -519,4 +519,3 @@ void display_usage( void ) {
     //printf("    --write|-w    : Write the *.itest and *.idata files\n");
     exit(-1);
 }
-

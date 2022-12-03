@@ -51,6 +51,8 @@ Philip Kegelmeyer, wpk@sandia.gov
 #include "mpiL.h"
 #include "version_info.h"
 
+void make_train_test_subsets2(CV_Subset full, int fold_pop, int fold_num, CV_Subset *train_subset, CV_Subset *test_subset);
+
 #ifdef HAVE_AVATAR_FCLIB
 //Modified by DACIESL June-04-08: Laplacean Estimates
 //uses new save_tree call
@@ -187,10 +189,9 @@ int main (int argc, char **argv) {
         // Handle each fold
         // The current fold is the testing data and all else is training data
         for (fold = 0; fold < Args.num_folds; fold++) {
-            
             CV_Subset Trainset, Testset;
             // Set up train and test sets
-            make_train_test_subsets(Full_Trainset, fold_population[fold], fold, &Trainset, &Testset);
+            make_train_test_subsets2(Full_Trainset, fold_population[fold], fold, &Trainset, &Testset);
             Testset.meta.Missing = Trainset.meta.Missing;
             
             // Train
@@ -249,7 +250,7 @@ int main (int argc, char **argv)
 }
 #endif
 
-void make_train_test_subsets(CV_Subset full, int fold_pop, int fold_num, CV_Subset *train_subset, CV_Subset *test_subset) {
+void make_train_test_subsets2(CV_Subset full, int fold_pop, int fold_num, CV_Subset *train_subset, CV_Subset *test_subset) {
     int j, k;
     
     copy_subset_meta(full, train_subset, full.meta.num_examples - fold_pop);

@@ -122,7 +122,7 @@ int main (int argc, char **argv) {
             fprintf(stderr, "Error reading names file\n");
             exit(-8);
         }
-        if (! read_data_file(&Dataset, &Trainset, &Class, &SortedExamples, "data", Args)) {
+        if (! read_data_file(&Dataset, &Trainset, &Class, &SortedExamples, "data", &Args)) {
             fprintf(stderr, "Error reading data file\n");
             exit(-8);
         }

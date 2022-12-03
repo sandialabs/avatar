@@ -53,6 +53,7 @@ Philip Kegelmeyer, wpk@sandia.gov
 #include "skew.h"
 #include "version_info.h"
 #include "attr_stats.h"
+#include "reset.h"
 
 // Included for cleanup purposes
 #include "evaluate.h"
@@ -76,6 +77,7 @@ int avatar_dt (int argc, char **argv) {
     DT_Ensemble *Test_Ensembles = NULL;
     Test_Ensembles = (DT_Ensemble *)calloc(1, sizeof(DT_Ensemble));
     Args_Opts Args = {0};
+    reset_Args_Opts(&Args);
 
     FC_Dataset ds = {0}, pred_prob = {0};
 
@@ -108,12 +110,12 @@ int avatar_dt (int argc, char **argv) {
 
     if (Args.do_training) {
         if (Args.format == EXODUS_FORMAT) {
-          #ifdef HAVE_AVATAR_FCLIB
+#ifdef HAVE_AVATAR_FCLIB
           init_fc(Args);
           open_exo_datafile(&ds, Args.datafile);
-          #else
+#else
           av_missingFCLIB();
-          #endif
+#endif
         }
         av_exitIfError(av_initSortedBlobArray(&Train_Sorted_Examples));
         read_training_data(&ds, &Train_Dataset, &Train_Subset, &Train_Sorted_Examples, &Args);
@@ -131,12 +133,12 @@ int avatar_dt (int argc, char **argv) {
 
     if (Args.do_testing) {
         if (Args.format == EXODUS_FORMAT && ! Args.do_training) {
-            #ifdef HAVE_AVATAR_FCLIB
+#ifdef HAVE_AVATAR_FCLIB
             init_fc(Args);
             open_exo_datafile(&ds, Args.datafile);
-            #else
+#else
             av_missingFCLIB();
-            #endif
+#endif
         }
         av_exitIfError(av_initSortedBlobArray(&Test_Sorted_Examples));
         read_testing_data(&ds, Train_Subset.meta, &Test_Dataset, &Test_Subset, &Test_Sorted_Examples, &Args);
@@ -152,7 +154,6 @@ int avatar_dt (int argc, char **argv) {
             Partitions.partition_datafile[0] = av_strdup(Args.datafile);
             Partitions.partition_data_path[0] = av_strdup(Args.data_path);
             Partitions.partition_base_filestem[0] = av_strdup(Args.base_filestem);
-            //printf("Using %d partition with filename '%s'\n", Partitions.num_partitions, Partitions.partition_filenames[0]);
         }
         if (Partitions.num_partitions > 1)
             Test_Ensembles = (DT_Ensemble *)realloc(Test_Ensembles, Partitions.num_partitions * sizeof(DT_Ensemble));
@@ -176,11 +177,11 @@ int avatar_dt (int argc, char **argv) {
     //num_pot_log_comps = 0;
     //max_log_lookup = -1;
 
-    #ifdef HAVE_AVATAR_FCLIB
+#ifdef HAVE_AVATAR_FCLIB
     if (Args.output_predictions)
         if (Args.format == EXODUS_FORMAT)
             init_predictions(Test_Subset.meta, &pred_prob, -1, Args);
-    #endif
+#endif
 
     if (Args.do_training) {
         // Train
@@ -191,7 +192,8 @@ int avatar_dt (int argc, char **argv) {
             //printf("Picks %ld\n", lrand48());
             train_ivote(Train_Subset, Test_Subset, -1, &Cache, Args);
         } else {
-            DT_Ensemble Train_Ensemble = {0};
+            DT_Ensemble Train_Ensemble;
+            reset_DT_Ensemble(&Train_Ensemble);
             train(&Train_Subset, &Train_Ensemble, -1, Args);
 
             // May need to re-read the ensemble for testing.
@@ -211,9 +213,11 @@ int avatar_dt (int argc, char **argv) {
             char *df;
             char *bf;
             char *dp;
+            char *tf;
             df = av_strdup(Args.datafile);
             bf = av_strdup(Args.base_filestem);
             dp = av_strdup(Args.data_path);
+            tf = av_strdup(Args.test_file);
             // Read all partition tree files
             for (i = 0; i < Partitions.num_partitions; i++) {
                 Args.datafile = av_strdup(Partitions.partition_datafile[i]);
@@ -223,15 +227,19 @@ int avatar_dt (int argc, char **argv) {
                     set_output_filenames(&Args, TRUE, TRUE);
                 else
                     set_output_filenames(&Args, FALSE, FALSE);
+                reset_DT_Ensemble(&Test_Ensembles[i]);
                 read_ensemble(&Test_Ensembles[i], -1, 0, &Args);
+                //check_ensemble_validity("Test_Ensemble",&Test_Ensembles[i]);
             }
             // Restore
             Args.datafile = av_strdup(df);
             Args.base_filestem = av_strdup(bf);
             Args.data_path = av_strdup(dp);
+            Args.test_file = av_strdup(tf);
             free(df);
             free(bf);
             free(dp);
+            free(tf);
             test(Test_Subset, Partitions.num_partitions, Test_Ensembles, pred_prob, -1, Args);
         }
     }

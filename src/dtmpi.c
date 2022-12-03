@@ -42,6 +42,7 @@ Philip Kegelmeyer, wpk@sandia.gov
 #include <unistd.h>
 #include <mpi.h>
 #include <errno.h>
+#include "av_utils.h"
 #include "crossval.h"
 #include "options.h"
 #include "rw_data.h"
@@ -53,17 +54,18 @@ Philip Kegelmeyer, wpk@sandia.gov
 #include "array.h"
 #include "gain.h"
 #include "mpiL.h"
+#include "reset.h"
 #include "version_info.h"
 
 //Modified by DACIESL June-04-08: Laplacean Estimates
 //uses new save_tree call
-#ifdef HAVE_AVATAR_FCLIB
 int main (int argc, char **argv) {
     int i, j;
     CV_Metadata Dataset_Meta;
     CV_Partition Partitions;
     DT_Ensemble *Ensemble;
     Args_Opts Args;
+    reset_Args_Opts(&Args);
     
     FC_Dataset ds;
     FC_Dataset pred_prob;
@@ -79,6 +81,8 @@ int main (int argc, char **argv) {
     derive_MPI_EXAMPLE();
     derive_MPI_TREENODE();
     
+    reset_CV_Metadata(&Dataset_Meta);
+
     //printf("Running as rank %d\n", myrank);
     // Root process reads all the data and creates the training and testing data subsets
     
@@ -112,6 +116,8 @@ int main (int argc, char **argv) {
             }
             set_output_filenames(&Args, FALSE, FALSE);
             Ensemble = (DT_Ensemble *)malloc(Partitions.num_partitions * sizeof(DT_Ensemble));
+            for(i=0; i<Partitions.num_partitions; i++)
+              reset_DT_Ensemble(&Ensemble[i]);
             //printf("Using %d partition with filename 0 '%s'\n", Partitions.num_partitions, Partitions.partition_datafile[0]);
             
             // Read the training data so that we can run late_process_opts and get num_attributes for later
@@ -131,6 +137,7 @@ int main (int argc, char **argv) {
     } else {
         // Non-root ranks only need to worry about a single DT_Ensemble
         Ensemble = (DT_Ensemble *)malloc(sizeof(DT_Ensemble));
+        reset_DT_Ensemble(&Ensemble[0]);
     }
     
     // Send Args to all the other processes
@@ -246,13 +253,14 @@ int main (int argc, char **argv) {
         free_Args_Opts(Args);
         // free the log lookup table
         dlog_2_int(-1);
-        
+#ifdef HAVE_AVATAR_FCLIB
         if (Args.format == EXODUS_FORMAT) {
             fc_deleteDataset(ds);
             if (Args.output_predictions)
                 fc_deleteDataset(pred_prob);
             fc_finalLibrary();
         }
+#endif
         if (! Args.save_trees && remove(Args.trees_file) < 0) {
             if (errno == EACCES) 
                 fprintf(stderr, "WARNING: Ensemble file '%s' not removed due to permission problems\n", Args.trees_file);
@@ -266,13 +274,6 @@ int main (int argc, char **argv) {
     
     return 0;
 }
-#else
-int main (int argc, char **argv)
-{
-  av_printfErrorMessage("To use dtmpi, install the fclib 1.6.1 source in avatar/util/ and then rebuild.");
-  return -1;
-}
-#endif
 
 //Modified by DACIESL June-03-08: HDDT CAPABILITY
 //Added HELLINGER to 's' flag

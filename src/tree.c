@@ -59,7 +59,6 @@ Philip Kegelmeyer, wpk@sandia.gov
 /* Prototype declarations for internal module functions. */
 void free_copied_CV_Subset(CV_Subset *sub);
 
-
 void train(CV_Subset *data, DT_Ensemble *ensemble, int fold_num, Args_Opts args) {
     int i, num_trees;
     // For stopping algorithm
@@ -685,6 +684,7 @@ void train_ivote(CV_Subset train_data, CV_Subset test_data, int fold_num, Vote_C
 //Modified by DACIESL June-05-08: Laplacean Estimates
 //added consideration for cases of Laplacean Estimate output
 void test(CV_Subset test_data, int num_ensembles, DT_Ensemble *ensemble, FC_Dataset dataset, int fold_num, Args_Opts args) {
+
     int i, j, k;
     if (args.output_accuracies == ON || args.output_accuracies == VERBOSE ||args.output_predictions || args.output_laplacean || args.output_confusion_matrix) 
     {
@@ -694,6 +694,7 @@ void test(CV_Subset test_data, int num_ensembles, DT_Ensemble *ensemble, FC_Data
             // Combine all trees into one ensemble and then do plain ol' voting on a single ensemble
             
             CV_Matrix Matrix;
+            reset_CV_Matrix(&Matrix);
             CV_Matrix Boost_Matrix;
             CV_Prob_Matrix Prob_Matrix;
             int **Confusion;
@@ -745,7 +746,9 @@ void test(CV_Subset test_data, int num_ensembles, DT_Ensemble *ensemble, FC_Data
 	        }
             } else if (num_ensembles > 1) {
                 DT_Ensemble big_ensemble;
+                reset_DT_Ensemble(&big_ensemble);
                 concat_ensembles(num_ensembles, ensemble, &big_ensemble);
+                //check_ensemble_validity("Concat ensemble",&big_ensemble);
                 //save_ensemble(big_ensemble, test_data.meta, -1, args);
                 test_data.meta.Missing = big_ensemble.Missing;
                 if (args.do_boosting == TRUE) {
@@ -760,9 +763,9 @@ void test(CV_Subset test_data, int num_ensembles, DT_Ensemble *ensemble, FC_Data
                         build_probability_matrix(test_data, big_ensemble, &Prob_Matrix);
                     else
   		        Prob_Matrix.num_classes = 0;
-		}
+		    }
             }
-            
+
             if (args.output_accuracies == ON || args.output_accuracies == VERBOSE) {
                 if (args.do_boosting == TRUE) {
                     printf("Boosting Accuracy = %.4f%%\n", compute_boosting_accuracy(Boost_Matrix, &Confusion) * 100.0);
@@ -801,6 +804,7 @@ void test(CV_Subset test_data, int num_ensembles, DT_Ensemble *ensemble, FC_Data
                             build_probability_matrix(test_data, ensemble[0], &Prob_Matrix);
                     } else if (num_ensembles > 1) {
                         DT_Ensemble big_ensemble;
+                        reset_DT_Ensemble(&big_ensemble);
                         concat_ensembles(num_ensembles, ensemble, &big_ensemble);
                         if (args.do_boosting == TRUE)
                             build_boost_probability_matrix(test_data, big_ensemble, &Prob_Matrix);
@@ -1177,6 +1181,7 @@ void test(CV_Subset test_data, int num_ensembles, DT_Ensemble *ensemble, FC_Data
             // Build matrix for each ensemble
             Matrix = (CV_Matrix *)malloc(num_ensembles * sizeof(CV_Matrix));
             for (i = 0; i < num_ensembles; i++) {
+                reset_CV_Matrix(&Matrix[i]);
                 test_data.meta.Missing = ensemble[i].Missing;
                 build_prediction_matrix(test_data, ensemble[i], &Matrix[i]);
             }
@@ -1475,6 +1480,7 @@ void test_ivote(CV_Subset test_data, Vote_Cache cache, FC_Dataset dataset, int f
 //Modified by DACIESL June-04-08: Laplacean Estimates
 //added consideration for saving class counts at leafs
 void _save_node(DT_Node *tree, int node, FILE *fh, int num_classes) {
+    if(!tree) return;
     int i;
     if (tree[node].branch_type == LEAF) {
         if (tree[node].class_count[0]==-1) {
@@ -1557,7 +1563,7 @@ void read_ensemble_metadata(FILE *fh, DT_Ensemble *ensemble, int force_num_trees
     }
     fscanf(fh, "%s", strbuf);
     if (! strcmp(strbuf, "NumExamplesPerClass:") && ensemble->num_classes > 0) {
-        free(ensemble->num_training_examples_per_class);
+        if(ensemble->num_training_examples_per_class) free(ensemble->num_training_examples_per_class);
         ensemble->num_training_examples_per_class = (int *)malloc(ensemble->num_classes * sizeof(int));
         for (i = 0; i < ensemble->num_classes; i++) {
             fscanf(fh, "%s", strbuf);
@@ -1756,6 +1762,7 @@ void read_ensemble(DT_Ensemble *ensemble, int fold_num, int force_num_trees, Arg
         ensemble->Books[i].next_unused_node = 1;
         ensemble->Books[i].current_node = 0;
         ensemble->Trees[i] = (DT_Node *)malloc(ensemble->Books[i].num_malloced_nodes * sizeof(DT_Node));
+        reset_DT_Node(ensemble->Trees[i]);
         _read_tree(strbuf, &ensemble->Trees[i], &ensemble->Books[i], tree_file, ensemble->num_classes);
     }
     
@@ -3102,3 +3109,38 @@ double _fminf(double x, double y) {
     return y;
 }
 
+int check_tree_validity(DT_Node* tree, int node, int num_classes, int num_nodes) {
+  int rv=1;
+  if(node >= num_nodes) {
+    printf("Validity Error: NODE %d runs past the # of nodes(%d)\n",node,num_nodes);
+    rv=0;
+  }
+
+  if (tree[node].branch_type == LEAF) {
+    if(  tree[node].Node_Value.class_label >=num_classes ||  tree[node].Node_Value.class_label < 0) {
+      printf("Validity Error: LEAF %d has class label: %d\n",node, tree[node].Node_Value.class_label);
+      rv=0;
+    }
+  }
+  else {
+    for(int i=0; rv && i<tree[node].num_branches; i++) {
+      rv = check_tree_validity(tree,tree[node].Node_Value.branch[i],num_classes,num_nodes);
+    }
+  }
+  return rv;
+}
+
+void check_ensemble_validity(const char *label, DT_Ensemble *ensemble) {
+  if(!ensemble) return;
+  int num_classes = ensemble->num_classes;
+
+  int num_valid_trees = 0;
+  for(int i=0; i<ensemble->num_trees; i++) {
+    DT_Node *tree = ensemble->Trees[i];
+    int num_nodes = ensemble->Books[i].next_unused_node;
+    num_valid_trees+= check_tree_validity(tree,0,ensemble->num_classes,num_nodes);
+  }
+  
+  printf("%s: check_ensemble_validity = %d/%d trees\n",label,num_valid_trees,ensemble->num_trees);
+  if(num_valid_trees != ensemble->num_trees) exit(1);
+}

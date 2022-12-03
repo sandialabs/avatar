@@ -37,6 +37,7 @@ Philip Kegelmeyer, wpk@sandia.gov
 #include <stdio.h>
 #include <string.h>
 #include "../src/crossval.h"
+#include "../src/reset.h"
 #include "../src/options.h"
 #include "../src/version_info.h"
 #include "../src/rw_data.h"
@@ -54,6 +55,11 @@ int main(int argc, char **argv) {
     FC_Dataset ds;
     CV_Dataset Dataset;
     CV_Subset Subset;
+
+    reset_DT_Ensemble(&Ensemble) ;
+    reset_CV_Dataset(&Dataset) ;
+    reset_CV_Subset(&Subset) ;
+
     int **node_matrix;
     Prox_Matrix *prox_matrix = NULL;
     int *voted_class;
@@ -65,7 +71,7 @@ int main(int argc, char **argv) {
     if (! sanity_check(&Args))
         exit(-1);
     set_output_filenames(&Args, FALSE, FALSE);
-    
+
     if (Args.format == EXODUS_FORMAT && ! Args.do_training) {
         init_fc(Args);
         open_exo_datafile(&ds, Args.datafile);

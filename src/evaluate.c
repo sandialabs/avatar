@@ -39,6 +39,7 @@ Philip Kegelmeyer, wpk@sandia.gov
 #include "util.h"
 #include "gain.h"
 #include "av_rng.h"
+#include "tree.h"
 
 typedef struct sortstore {
   double value;
@@ -107,7 +108,6 @@ int _classify_example(DT_Node *tree, int node, CV_Example example, float **xlate
         return tree[node].Node_Value.class_label;
     } else {
         if (tree[node].attribute_type == CONTINUOUS) {
-            //printf("Node %d has two branches: %d and %d\n", node, tree[node].Node_Value.branch[0], tree[node].Node_Value.branch[1]);
             if (xlate[tree[node].attribute][example.distinct_attribute_values[tree[node].attribute]] <
                                                                                         tree[node].branch_threshold)
                 class_label = _classify_example(tree, tree[node].Node_Value.branch[0], example, xlate, leaf_node);
@@ -206,7 +206,7 @@ void build_probability_matrix(CV_Subset data, DT_Ensemble ensemble, CV_Prob_Matr
 void build_prediction_matrix(CV_Subset data, DT_Ensemble ensemble, CV_Matrix *matrix) {
     int i, j;
     int leaf_node;
-    
+
     matrix->data = (union data_type_union **)malloc(data.meta.num_examples * sizeof(union data_type_union*));
     for (i = 0; i < data.meta.num_examples; i++)
         matrix->data[i] = (union data_type_union *)malloc((ensemble.num_trees + 1) * sizeof(union data_type_union));
@@ -315,7 +315,8 @@ void concat_ensembles(int num_ensembles, DT_Ensemble *in, DT_Ensemble *out) {
     int i, j, k, m;
     
     out->Trees = (DT_Node **)malloc(sizeof(DT_Node *));
-    
+    out->Books = (Tree_Bookkeeping*)malloc(sizeof(Tree_Bookkeeping));
+
     // Copy metadata but ignore Books and weights (for now)
     out->num_trees = 0;
     out->num_classes = in[0].num_classes;
@@ -335,9 +336,11 @@ void concat_ensembles(int num_ensembles, DT_Ensemble *in, DT_Ensemble *out) {
     // Add trees
     for (i = 0; i < num_ensembles; i++) {
         out->Trees = (DT_Node **)realloc(out->Trees, (out->num_trees + in[i].num_trees) * sizeof(DT_Node *));
+        out->Books = (Tree_Bookkeeping*)realloc(out->Books,(out->num_trees + in[i].num_trees) * sizeof(Tree_Bookkeeping));
         for (j = 0; j < in[i].num_trees; j++) {
             int n = out->num_trees + j;
             out->Trees[n] = (DT_Node *)malloc(in[i].Books[j].next_unused_node * sizeof(DT_Node));
+            out->Books[n].next_unused_node = out->Books[n].num_malloced_nodes = in[i].Books[j].next_unused_node;
             for (k = 0; k < in[i].Books[j].next_unused_node; k++) {
                 out->Trees[n][k].branch_type = in[i].Trees[j][k].branch_type;
                 out->Trees[n][k].attribute = in[i].Trees[j][k].attribute;
@@ -346,6 +349,11 @@ void concat_ensembles(int num_ensembles, DT_Ensemble *in, DT_Ensemble *out) {
                 out->Trees[n][k].branch_threshold = in[i].Trees[j][k].branch_threshold;
                 out->Trees[n][k].attribute_type = in[i].Trees[j][k].attribute_type;
                 if (out->Trees[n][k].branch_type == LEAF) {
+                    int jj=in[i].Trees[j][k].Node_Value.class_label;
+                    // Add a sanity check on the concat
+                    if (jj >= out->num_classes || jj < 0) {
+                        printf("Concat Error: Class label %d found (only %d allowed)\n",jj,out->num_classes);exit(1);
+                    }
                     out->Trees[n][k].Node_Value.class_label = in[i].Trees[j][k].Node_Value.class_label;
                 } else if (out->Trees[n][k].branch_type == BRANCH) {
                     out->Trees[n][k].Node_Value.branch = (int *)malloc(out->Trees[n][k].num_branches * sizeof(int));

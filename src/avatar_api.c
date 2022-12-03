@@ -131,7 +131,7 @@ void read_testing_data_only(FC_Dataset *ds, CV_Class * Class, CV_Metadata train_
             } 
       */
       // This guy gets kept
-        if (! read_data_file(dataset, subset, Class, sorted_examples, "test", *args)) {
+        if (! read_data_file(dataset, subset, Class, sorted_examples, "test", args)) {
             fprintf(stderr, "Error reading data file\n");
             exit(-8);
         }

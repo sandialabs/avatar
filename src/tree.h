@@ -78,5 +78,8 @@ double _fminf(double x, double y);
 void test(CV_Subset test_data, int num_ensembles, DT_Ensemble *ensemble, FC_Dataset dataset, int fold_num, Args_Opts args);
 void test_ivote(CV_Subset test_data, Vote_Cache cache, FC_Dataset dataset, int fold_num, Args_Opts args);
 
+int check_tree_validity(DT_Node* tree, int node, int num_classes, int num_nodes);
+void check_ensemble_validity(const char * label,DT_Ensemble *ensemble);
+
 #endif
 
